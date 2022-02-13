@@ -264,13 +264,9 @@ Renderer::Renderer(Window* window)
     cbuffer_per_object_desc.CPUAccessFlags = 0;
     DX11_VERIFY(device_->CreateBuffer(&cbuffer_per_object_desc, nullptr, &cbuffer_per_object_));
 
-    // Set up camera data and matrices
-    mat_view_ = XMMatrixLookAtLH(cam_pos_, cam_target_, cam_up_);
-
+    // Set up camera
     float aspect_ratio = window->GetWidth() / static_cast<float>(window->GetHeight());
-    mat_projection_ = XMMatrixPerspectiveFovLH(fov_y_rad, aspect_ratio, near_z, far_z);
-
-    mat_vp_ = mat_view_ * mat_projection_;
+    camera_ = Camera(Vec3(0.0f, 0.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
 
     // Load texture
     int tex_width;
@@ -379,9 +375,9 @@ void Renderer::Render()
     device_context_->OMSetBlendState(blend_state_transparent_.Get(), nullptr, 0xffffffff);
 
     // Update the cbuffer
-    mat_world_ = XMMatrixRotationX(XMConvertToRadians(angle)) * XMMatrixTranslation(.5f, 0.0f, 0.5f);
-    mat_wvp_ = mat_world_ * mat_vp_;
-    per_object_data_.wvp = XMMatrixTranspose(mat_wvp_); // CPU: row major, GPU: col major! -> We have to transpose.
+    Mat4 mat_world_ = XMMatrixRotationX(XMConvertToRadians(angle)) * XMMatrixTranslation(.5f, 0.0f, 0.5f);
+    Mat4 mat_wvp_ = mat_world_ * camera_.GetView() * camera_.GetProjection();
+    per_object_data_.wvp = mat_wvp_.Transpose(); // CPU: row major, GPU: col major! -> We have to transpose.
     per_object_data_.alpha = 0.25f;
     device_context_->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
     device_context_->VSSetConstantBuffers(0, 1, cbuffer_per_object_.GetAddressOf());

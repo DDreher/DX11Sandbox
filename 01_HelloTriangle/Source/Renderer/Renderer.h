@@ -31,7 +31,7 @@ struct PixelShader
 struct VertexPos
 {
     VertexPos() {}
-    VertexPos(XMFLOAT3 in_pos)
+    VertexPos(Vec3 in_pos)
         : pos(in_pos)
     {
     }
@@ -41,7 +41,7 @@ struct VertexPos
     {
     }
 
-    XMFLOAT3 pos;
+    Vec3 pos;
 
     static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] = 
     {
@@ -63,8 +63,8 @@ struct VertexPos
 
 struct VertexPosColor
 {
-    XMFLOAT3 pos_;
-    XMFLOAT3 color_;
+    Vec3 pos_;
+    Vec3 color_;
 
     static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
     {
@@ -142,9 +142,9 @@ private:
     // Mesh data
     VertexPosColor triangle_vertices_[3] =
     {
-        { XMFLOAT3(0.0f, 0.5f, 0.5f), XMFLOAT3(1.0f, 0.0f, 0.0f) },
-        { XMFLOAT3(0.5f, -0.5f, 0.5f), XMFLOAT3(0.0f, 1.0f, 0.0f) },
-        { XMFLOAT3(-0.5f, -0.5f, 0.5f), XMFLOAT3(1.0f, 0.0f, 1.0f) }
+        { Vec3(0.0f, 0.5f, 0.5f),   Vec3(1.0f, 0.0f, 0.0f) },
+        { Vec3(0.5f, -0.5f, 0.5f),  Vec3(0.0f, 1.0f, 0.0f) },
+        { Vec3(-0.5f, -0.5f, 0.5f), Vec3(1.0f, 0.0f, 1.0f) }
     };
 
     uint16 triangle_indices_[3] =
