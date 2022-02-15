@@ -10,6 +10,7 @@
 #include <DirectXPackedVector.h>
 
 #include "Core/Window.h"
+#include "Renderer/Camera.h"
 #include "Renderer/DX11Types.h"
 
 using namespace DirectX;
@@ -31,7 +32,7 @@ struct PixelShader
 struct VertexPos
 {
     VertexPos() {}
-    VertexPos(XMFLOAT3 in_pos)
+    VertexPos(Vec3 in_pos)
         : pos(in_pos)
     {
     }
@@ -41,7 +42,7 @@ struct VertexPos
     {
     }
 
-    XMFLOAT3 pos;
+    Vec3 pos;
 
     static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] = 
     {
@@ -63,8 +64,8 @@ struct VertexPos
 
 struct VertexPosColor
 {
-    XMFLOAT3 pos_;
-    XMFLOAT3 color_;
+    Vec3 pos_;
+    Vec3 color_;
 
     static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
     {
@@ -77,8 +78,8 @@ struct VertexPosColor
 
 struct VertexPosUV
 {
-    XMFLOAT3 pos_;
-    XMFLOAT2 uv_;
+    Vec3 pos_;
+    Vec2 uv_;
 
     static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
     {
@@ -91,8 +92,9 @@ struct VertexPosUV
 
 struct CBufferPerObject
 {
-    XMMATRIX wvp;
+    Mat4 wvp;
     float alpha = 0.0f;
+    float padding[3];
 };
 
 class Renderer
@@ -169,27 +171,14 @@ private:
     float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
 
     // Object data
-    XMMATRIX mat_world_;
+    Mat4 mat_world_;
     CBufferPerObject per_object_data_;
-    CBufferPerObject per_object_data_2;
 
     ComPtr<ID3D11Texture2D> texture_ = nullptr;
     ComPtr<ID3D11ShaderResourceView> texture_srv_ = nullptr;
     ComPtr<ID3D11SamplerState> texture_sampler_state_ = nullptr;
 
-    // Camera data
-    XMVECTOR cam_pos_ = XMVectorSet(0.0f, 0.0f, -10.0f, 1.0f);
-    XMVECTOR cam_target_ = XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f);
-    XMVECTOR cam_up_ = XMVectorSet(0.0f, 1.0f, 0.0f, 1.0f);
-    float fov_y_rad = XMConvertToRadians(45.0f);
-    float aspect_ratio = 16.0f / 9.0f;
-    float near_z = 0.1f;
-    float far_z = 1000.0f;
-
-    XMMATRIX mat_view_;
-    XMMATRIX mat_projection_;
-    XMMATRIX mat_vp_;
-    XMMATRIX mat_wvp_;
+    Camera camera_;
 
     uint16 cube_indices_[2 * 3 * 6] =
     {
@@ -204,40 +193,40 @@ private:
     VertexPosUV cube_textured_vertices_[4*6] =
     {
         // front
-        { XMFLOAT3(-1.0f, -1.0f,  -1.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f,  1.0f,  -1.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(1.0f,  1.0f,   -1.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f,   -1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { Vec3(-1.0f, -1.0f,  -1.0f), Vec2(0.0f, 1.0f) },
+        { Vec3(-1.0f,  1.0f,  -1.0f), Vec2(0.0f, 0.0f) },
+        { Vec3(1.0f,  1.0f,   -1.0f), Vec2(1.0f, 0.0f) },
+        { Vec3(1.0f, -1.0f,   -1.0f), Vec2(1.0f, 1.0f) },
         
         // back
-        { XMFLOAT3(-1.0f, -1.0f, 1.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3( 1.0f, -1.0f, 1.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3( 1.0f,  1.0f, 1.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f,  1.0f, 1.0f), XMFLOAT2(1.0f, 0.0f) },
+        { Vec3(-1.0f, -1.0f, 1.0f), Vec2(1.0f, 1.0f) },
+        { Vec3(1.0f, -1.0f, 1.0f), Vec2(0.0f, 1.0f) },
+        { Vec3(1.0f,  1.0f, 1.0f), Vec2(0.0f, 0.0f) },
+        { Vec3(-1.0f,  1.0f, 1.0f), Vec2(1.0f, 0.0f) },
 
         // top
-        { XMFLOAT3(-1.0f, 1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f, 1.0f,  1.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f,  1.0f),  XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, 1.0f, -1.0f),  XMFLOAT2(1.0f, 1.0f) },
+        { Vec3(-1.0f, 1.0f, -1.0f), Vec2(0.0f, 1.0f) },
+        { Vec3(-1.0f, 1.0f,  1.0f), Vec2(0.0f, 0.0f) },
+        { Vec3(1.0f, 1.0f,  1.0f),  Vec2(1.0f, 0.0f) },
+        { Vec3(1.0f, 1.0f, -1.0f),  Vec2(1.0f, 1.0f) },
 
         // bottom
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f, -1.0f),  XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(1.0f, -1.0f,  1.0f),  XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT2(1.0f, 0.0f) },
+        { Vec3(-1.0f, -1.0f, -1.0f), Vec2(1.0f, 1.0f) },
+        { Vec3(1.0f, -1.0f, -1.0f),  Vec2(0.0f, 1.0f) },
+        { Vec3(1.0f, -1.0f,  1.0f),  Vec2(0.0f, 0.0f) },
+        { Vec3(-1.0f, -1.0f,  1.0f), Vec2(1.0f, 0.0f) },
 
         // left
-        { XMFLOAT3(-1.0f, -1.0f,  1.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(-1.0f,  1.0f,  1.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(-1.0f,  1.0f, -1.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(-1.0f, -1.0f, -1.0f), XMFLOAT2(1.0f, 1.0f) },
+        { Vec3(-1.0f, -1.0f,  1.0f), Vec2(0.0f, 1.0f) },
+        { Vec3(-1.0f,  1.0f,  1.0f), Vec2(0.0f, 0.0f) },
+        { Vec3(-1.0f,  1.0f, -1.0f), Vec2(1.0f, 0.0f) },
+        { Vec3(-1.0f, -1.0f, -1.0f), Vec2(1.0f, 1.0f) },
 
         // right
-        { XMFLOAT3(1.0f, -1.0f, -1.0f), XMFLOAT2(0.0f, 1.0f) },
-        { XMFLOAT3(1.0f,  1.0f, -1.0f), XMFLOAT2(0.0f, 0.0f) },
-        { XMFLOAT3(1.0f,  1.0f,  1.0f), XMFLOAT2(1.0f, 0.0f) },
-        { XMFLOAT3(1.0f, -1.0f,  1.0f), XMFLOAT2(1.0f, 1.0f) }
+        { Vec3(1.0f, -1.0f, -1.0f), Vec2(0.0f, 1.0f) },
+        { Vec3(1.0f,  1.0f, -1.0f), Vec2(0.0f, 0.0f) },
+        { Vec3(1.0f,  1.0f,  1.0f), Vec2(1.0f, 0.0f) },
+        { Vec3(1.0f, -1.0f,  1.0f), Vec2(1.0f, 1.0f) }
     };
 
     uint16 cube_tex_indices_[2*3*6] = {
