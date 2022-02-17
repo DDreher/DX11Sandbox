@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Application.h"
-#include "Renderer.h"
+#include "Renderer/Renderer.h"
 
 class AppTexturedCube : public BaseApplication
 {
