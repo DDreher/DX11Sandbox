@@ -67,8 +67,7 @@ project (BaseProjectName)
 
 	AddSourceFiles(BaseProjectName)
 	includedirs { "$(ProjectDir)" }
-	IncludeModule (BaseProjectName, "Core")
-	IncludeModule (BaseProjectName, "Renderer")
+	includedirs { ("$(SolutionDir)/" .. BaseProjectName .. "/Source/") }
 	
 	pchheader ("Core.h")
 	pchsource ("../" .. BaseProjectName .. "/Source/Core/Core.cpp")
@@ -76,14 +75,14 @@ project (BaseProjectName)
 
 	disablewarnings 
 	{
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
 		"4189"  -- local variable initalized but not referenced
 	}
 
 	AddSTB()
-	AddTinyObjLoader()
 	AddSpdlog()
 	AddSDL2()
+	AddAssimp()
 
 	filter "files:**/ThirdParty/**.*"
 		flags "NoPCH"
@@ -101,8 +100,7 @@ project (ProjectName)
 
 	AddSourceFiles(ProjectName)
 	includedirs { "$(ProjectDir)" }
-	IncludeModule (ProjectName, "Core")
-	IncludeModule (ProjectName, "Renderer")
+	includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
 	
 	pchheader ("AppCore.h")
 	pchsource ("../" .. ProjectName .. "/Source/Core/AppCore.cpp")
@@ -115,7 +113,6 @@ project (ProjectName)
 	}
 
 	AddSTB()
-	AddTinyObjLoader()
 	AddSpdlog()
 	AddSDL2()
 
@@ -123,7 +120,7 @@ project (ProjectName)
 		flags "NoPCH"
 		disablewarnings { "4100" }
 
-local ProjectName = "02_TexturedCube"
+ProjectName = "02_TexturedCube"
 project (ProjectName)
 	location ("../" .. ProjectName )
 	targetdir ("../Build/" .. ProjectName .. "$(Configuration)_$(Platform)")
@@ -135,8 +132,7 @@ project (ProjectName)
 
 	AddSourceFiles(ProjectName)
 	includedirs { "$(ProjectDir)" }
-	IncludeModule (ProjectName, "Core")
-	IncludeModule (ProjectName, "Renderer")
+	includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
 	
 	pchheader ("AppCore.h")
 	pchsource ("../" .. ProjectName .. "/Source/Core/AppCore.cpp")
@@ -149,7 +145,38 @@ project (ProjectName)
 	}
 
 	AddSTB()
-	AddTinyObjLoader()
+	AddSpdlog()
+	AddSDL2()
+
+	filter "files:**/ThirdParty/**.*"
+		flags "NoPCH"
+		disablewarnings { "4100" }
+
+ProjectName = "03_Mesh"
+project (ProjectName)
+	location ("../" .. ProjectName )
+	targetdir ("../Build/" .. ProjectName .. "$(Configuration)_$(Platform)")
+	objdir "!../Build/Intermediate/$(ProjectName)_$(Configuration)_$(Platform)"
+	kind "ConsoleApp"
+
+	links { (BaseProjectName) }
+	includedirs { ("../" .. BaseProjectName .. "/Source/") }
+
+	AddSourceFiles(ProjectName)
+	includedirs { "$(ProjectDir)" }
+	includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
+	
+	pchheader ("AppCore.h")
+	pchsource ("../" .. ProjectName .. "/Source/Core/AppCore.cpp")
+	forceincludes  { "AppCore.h" }
+
+	disablewarnings 
+	{
+		"4100", -- unreferenced formal paramter
+		"4189"  -- local variable initalized but not referenced
+	}
+
+	AddSTB()
 	AddSpdlog()
 	AddSDL2()
 

@@ -32,27 +32,38 @@ Tl;dr: I know the code's dirty ;) Don't judge me.
 The very minimum to get started with a graphics API:    
 A colored triangle.
 
-### [02 - Textured Cube](02_TexturedCube/Source/)
+### [02 - Texturing](02_TexturedCube/Source/)
 
 <p align="left">
 <img src="doc/images/02_textured_cube.png?raw=true" alt="Image of Subproject: 02-TexturedCube" height="320px">
 </p>
 
 A rotating, textured, semi-transparent cube.    
-Used to explore constant buffers, different blend states.    
-Also a great showcase for the underlying problem of transparency and depth-sorting:    
-Because I didn't control which face of the cube is drawn first, sometimes the backface is visible and sometimes it's discarded.
+Used to explore constant buffers, different blend states.
+
+### [03 - Loading Models](03_Mesh/Source/)
+
+<p align="left">
+<img src="doc/images/03_model.png?raw=true" alt="Image of Subproject: 03-Mesh" height="320px">
+</p>
+
+We can now load models from files! 🎉    
+Also some further abstraction and refactoring of the render pipeline (Transforms, Shaders, Materials, Bindings,...)
+
 
 ## Dependencies
 
-* [TinyObjLoader](https://github.com/syoyo/tinyobjloader)
+* [Assimp](www.assimp.org)
+* [SDL2](https://www.libsdl.org/)
 * [STB](https://github.com/nothings/stb)
-* [SDL](https://www.libsdl.org/)
+* [Spdlog](https://github.com/gabime/spdlog)
+
+## Acknowledgments
+
+* [Chunky Knight](https://skfb.ly/6CwEJ) model by thanhtp, licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 ## Learning Resources
 
 * [YouTube: ChiliTomatoNoodle](https://www.youtube.com/channel/UCsyHonfwHi4fLb2lkq0DEAA)
-
 * [Rastertek](http://www.rastertek.com/tutdx11.html)
-
 * [3dgep](https://www.3dgep.com/introduction-to-directx-11/)

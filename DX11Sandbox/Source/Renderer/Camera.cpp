@@ -3,8 +3,12 @@
 Camera::Camera(Vec3 pos, float aspect_ratio, float fov, float near_clip, float far_clip)
     : pos_(pos), aspect_ratio_(aspect_ratio), fov_(fov), near_clip_(near_clip), far_clip_(far_clip)
 {
-    UpdateProjection();
-    UpdateView();
+    UpdateMatrices();
+}
+
+void Camera::LookAt(Vec3 target)
+{
+    SetView(Mat4::LookAt(pos_, target, up_));
 }
 
 void Camera::SetNearClip(float z)
@@ -53,6 +57,30 @@ const Mat4& Camera::GetView()
 void Camera::SetView(const Mat4& view)
 {
     view_ = view;
+    is_view_dirty_ = true;
+}
+
+const Mat4& Camera::GetViewProjection()
+{
+    return view_projection_;
+}
+
+void Camera::SetViewProjection(const Mat4& vp)
+{
+    view_projection_ = vp;
+}
+
+void Camera::UpdateMatrices()
+{
+    bool is_vp_dirty = is_view_dirty_ || is_projection_dirty_;
+
+    UpdateProjection();
+    UpdateView();
+
+    if(is_vp_dirty)
+    {
+        UpdateViewProjection();
+    }
 }
 
 void Camera::UpdateProjection()
@@ -63,7 +91,13 @@ void Camera::UpdateProjection()
 
 void Camera::UpdateView()
 {
-    Vec3 target = { 0.0f, 0.0f, 0.0f };
-    view_ = Mat4::LookAt(pos_, target, up_);
+    // TODO: Maybe we want to automatically track a target at some point...?
+    /*Vec3 target = { 0.0f, 0.0f, 0.0f };
+    view_ = Mat4::LookAt(pos_, target, up_);*/
     is_view_dirty_ = false;
+}
+
+void Camera::UpdateViewProjection()
+{
+    view_projection_ = view_ * projection_;
 }
