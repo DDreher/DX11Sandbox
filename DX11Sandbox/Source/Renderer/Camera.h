@@ -6,6 +6,8 @@ public:
     Camera() = default;
     Camera(Vec3 pos, float aspect_ratio, float fov, float near_clip, float far_clip);
 
+    void LookAt(Vec3 target);
+
     void SetNearClip(float z);
     void SetFarClip(float z);
     void SetFov(float fov_in_rad);
@@ -16,18 +18,31 @@ public:
     const Mat4& GetView();
     void SetView(const Mat4& view);
 
+    const Mat4& GetViewProjection();
+    void SetViewProjection(const Mat4& vp);
+
     inline static const Vec3 DEFAULT_POS = Vec3::ZERO;
     inline static const float DEFAULT_ASPECT_RATIO = 16.0f / 9.0f;
     inline static const float DEFAULT_FOV = MathUtils::DegToRad(90.0f);
     inline static const float DEFAULT_NEAR_CLIP = 0.1f;
     inline static const float DEFAULT_FAR_CLIP = 1000.0f;
 
+    void UpdateMatrices();
+
+    void SetPosition(Vec3 pos)
+    {
+        pos_ = pos;
+        is_view_dirty_ = true;
+    }
+
 private:
     void UpdateProjection();
     void UpdateView();
+    void UpdateViewProjection();
 
     Vec3 pos_ = Camera::DEFAULT_POS;
     Vec3 up_ = { 0.0f, 1.0f, 0.0f };
+    Vec3 right_ = { 1.0f, 0.0f, 0.0f };
 
     float near_clip_ = Camera::DEFAULT_NEAR_CLIP;
     float far_clip_ = Camera::DEFAULT_FAR_CLIP;
@@ -39,4 +54,6 @@ private:
 
     Mat4 projection_;
     bool is_projection_dirty_ = true;
+
+    Mat4 view_projection_;
 };

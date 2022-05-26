@@ -134,3 +134,4 @@ Saved/
 # Exception for necessary binaries
 !premake5.exe
 !ThirdParty/**/*.lib
+Build/

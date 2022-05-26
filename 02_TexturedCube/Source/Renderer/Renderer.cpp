@@ -126,24 +126,23 @@ Renderer::Renderer(Window* window)
 #endif
 
     // Create swapchain and device
-    DX11_VERIFY(D3D11CreateDeviceAndSwapChain(
-        nullptr,    // video adapter to use. If null, use first adapter
-        D3D_DRIVER_TYPE_HARDWARE,   // Hardware driver -> Best performance
-        nullptr,    // Handle to dll that implements software rasterizer. Won't need this.
+    DX11_VERIFY(D3D11CreateDeviceAndSwapChain(nullptr,
+        D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
         create_device_flags,
         accepted_feature_levels, _countof(accepted_feature_levels),
         D3D11_SDK_VERSION,
         &swapchain_desc,
-        &swapchain_,
-        &device_,
+        &graphics_context_.swapchain,
+        &graphics_context_.device,
         &device_feature_level,
-        &device_context_));
+        &graphics_context_.device_context));
 
     // Get render target view from swapchain backbuffer
     // Even with triple buffering we only need a single render target view (?)
     ComPtr<ID3D11Texture2D> backbuffer;
-    DX11_VERIFY(swapchain_->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
-    DX11_VERIFY(device_->CreateRenderTargetView(
+    DX11_VERIFY(graphics_context_.swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
+    DX11_VERIFY(graphics_context_.device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
         nullptr,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
         &backbuffer_color_view_));
@@ -161,11 +160,11 @@ Renderer::Renderer(Window* window)
     depth_buffer_desc.SampleDesc.Quality = 0;
     depth_buffer_desc.Usage = D3D11_USAGE_DEFAULT;  // Read and write access by the GPU
 
-    DX11_VERIFY(device_->CreateTexture2D(&depth_buffer_desc,
+    DX11_VERIFY(graphics_context_.device->CreateTexture2D(&depth_buffer_desc,
         nullptr,    // ptr to initial data
         &depth_buffer_));
 
-    DX11_VERIFY(device_->CreateDepthStencilView(depth_buffer_.Get(), nullptr, &backbuffer_depth_view_));
+    DX11_VERIFY(graphics_context_.device->CreateDepthStencilView(depth_buffer_.Get(), nullptr, &backbuffer_depth_view_));
 
     // Create depth stencil state -> configure depth test
     D3D11_DEPTH_STENCIL_DESC depth_stencil_desc = {};
@@ -173,7 +172,7 @@ Renderer::Renderer(Window* window)
     depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     depth_stencil_desc.DepthFunc = D3D11_COMPARISON_LESS;
     depth_stencil_desc.StencilEnable = FALSE;
-    DX11_VERIFY(device_->CreateDepthStencilState(&depth_stencil_desc, &depth_stencil_state_));
+    DX11_VERIFY(graphics_context_.device->CreateDepthStencilState(&depth_stencil_desc, &depth_stencil_state_));
 
     // Create rasterizer state
     D3D11_RASTERIZER_DESC rasterizer_desc = {};
@@ -187,7 +186,7 @@ Renderer::Renderer(Window* window)
     rasterizer_desc.MultisampleEnable = FALSE;
     rasterizer_desc.ScissorEnable = FALSE;
     rasterizer_desc.SlopeScaledDepthBias = 0.0f;
-    DX11_VERIFY(device_->CreateRasterizerState(&rasterizer_desc, &rs_solid_));
+    DX11_VERIFY(graphics_context_.device->CreateRasterizerState(&rasterizer_desc, &rs_solid_));
 
     rasterizer_desc = {};
     rasterizer_desc.AntialiasedLineEnable = FALSE;
@@ -200,7 +199,7 @@ Renderer::Renderer(Window* window)
     rasterizer_desc.MultisampleEnable = FALSE;
     rasterizer_desc.ScissorEnable = FALSE;
     rasterizer_desc.SlopeScaledDepthBias = 0.0f;
-    DX11_VERIFY(device_->CreateRasterizerState(&rasterizer_desc, &rs_wireframe_));
+    DX11_VERIFY(graphics_context_.device->CreateRasterizerState(&rasterizer_desc, &rs_wireframe_));
 
     rasterizer_desc = {};
     rasterizer_desc.AntialiasedLineEnable = FALSE;
@@ -213,7 +212,7 @@ Renderer::Renderer(Window* window)
     rasterizer_desc.MultisampleEnable = FALSE;
     rasterizer_desc.ScissorEnable = FALSE;
     rasterizer_desc.SlopeScaledDepthBias = 0.0f;
-    DX11_VERIFY(device_->CreateRasterizerState(&rasterizer_desc, &rs_double_sided_));
+    DX11_VERIFY(graphics_context_.device->CreateRasterizerState(&rasterizer_desc, &rs_double_sided_));
 
     // Configure viewport, i.e. the renderable area
     viewport_.Width = static_cast<float>(window->GetWidth());
@@ -222,16 +221,16 @@ Renderer::Renderer(Window* window)
     viewport_.TopLeftY = 0.0f;
     viewport_.MinDepth = 0.0f;
     viewport_.MaxDepth = 1.0f;
-    device_context_->RSSetViewports(1, &viewport_);
+    graphics_context_.device_context->RSSetViewports(1, &viewport_);
 
     // Bind render target views to output merger stage of pipeline
-    device_context_->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
+    graphics_context_.device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
     
     // Scene Setup 
 
     // Load Shaders
-    vertex_shader_.LoadFromHlsl(device_.Get(), "assets/shaders/vs_unlit.hlsl");
-    pixel_shader_.LoadFromHlsl(device_.Get(), "assets/shaders/ps_unlit.hlsl");
+    vertex_shader_.LoadFromHlsl(graphics_context_.device.Get(), "assets/shaders/vs_textured_cube.hlsl");
+    pixel_shader_.LoadFromHlsl(graphics_context_.device.Get(), "assets/shaders/ps_textured_cube.hlsl");
 
     // Set up Vertex Buffer.
     D3D11_BUFFER_DESC vertex_buffer_desc = {};
@@ -243,7 +242,7 @@ Renderer::Renderer(Window* window)
     // Fill info about the initial data of the vertex buffer
     D3D11_SUBRESOURCE_DATA subresource_data = {};
     subresource_data.pSysMem = cube_textured_vertices_;
-    DX11_VERIFY(device_->CreateBuffer(&vertex_buffer_desc, &subresource_data, &vertex_buffer_));
+    DX11_VERIFY(graphics_context_.device->CreateBuffer(&vertex_buffer_desc, &subresource_data, &vertex_buffer_));
 
     // Set up Index Buffer
     D3D11_BUFFER_DESC index_buffer_desc = {};
@@ -254,7 +253,7 @@ Renderer::Renderer(Window* window)
 
     subresource_data = {};
     subresource_data.pSysMem = cube_tex_indices_;
-    DX11_VERIFY(device_->CreateBuffer(&index_buffer_desc, &subresource_data, &index_buffer_));
+    DX11_VERIFY(graphics_context_.device->CreateBuffer(&index_buffer_desc, &subresource_data, &index_buffer_));
 
     // Set up cbuffer
     D3D11_BUFFER_DESC cbuffer_per_object_desc = {};
@@ -262,7 +261,7 @@ Renderer::Renderer(Window* window)
     cbuffer_per_object_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     cbuffer_per_object_desc.ByteWidth = sizeof(CBufferPerObject);
     cbuffer_per_object_desc.CPUAccessFlags = 0;
-    DX11_VERIFY(device_->CreateBuffer(&cbuffer_per_object_desc, nullptr, &cbuffer_per_object_));
+    DX11_VERIFY(graphics_context_.device->CreateBuffer(&cbuffer_per_object_desc, nullptr, &cbuffer_per_object_));
 
     // Set up camera
     float aspect_ratio = window->GetWidth() / static_cast<float>(window->GetHeight());
@@ -290,10 +289,10 @@ Renderer::Renderer(Window* window)
     D3D11_SUBRESOURCE_DATA texture_subresource_data = {};
     texture_subresource_data.pSysMem = tex_data;
     texture_subresource_data.SysMemPitch = image_pitch;
-    DX11_VERIFY(device_->CreateTexture2D(&texture_desc, &texture_subresource_data, &texture_));
+    DX11_VERIFY(graphics_context_.device->CreateTexture2D(&texture_desc, &texture_subresource_data, &texture_));
     stbi_image_free(tex_data);
 
-    DX11_VERIFY(device_->CreateShaderResourceView(texture_.Get(), nullptr, &texture_srv_));
+    DX11_VERIFY(graphics_context_.device->CreateShaderResourceView(texture_.Get(), nullptr, &texture_srv_));
 
     D3D11_SAMPLER_DESC texture_sampler_desc = {};
     texture_sampler_desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
@@ -309,7 +308,7 @@ Renderer::Renderer(Window* window)
     texture_sampler_desc.BorderColor[3] = 0.0f;
     texture_sampler_desc.MinLOD = -FLT_MAX;
     texture_sampler_desc.MaxLOD = FLT_MAX;
-    DX11_VERIFY(device_->CreateSamplerState(&texture_sampler_desc, &texture_sampler_state_));
+    DX11_VERIFY(graphics_context_.device->CreateSamplerState(&texture_sampler_desc, &texture_sampler_state_));
 
     D3D11_RENDER_TARGET_BLEND_DESC render_target_blend_desc = {};
     render_target_blend_desc.BlendEnable = true;
@@ -328,7 +327,7 @@ Renderer::Renderer(Window* window)
     D3D11_BLEND_DESC blend_state_desc = {};
     blend_state_desc.AlphaToCoverageEnable = false;
     blend_state_desc.RenderTarget[0] = render_target_blend_desc;
-    DX11_VERIFY(device_->CreateBlendState(&blend_state_desc, &blend_state_transparent_));
+    DX11_VERIFY(graphics_context_.device->CreateBlendState(&blend_state_desc, &blend_state_transparent_));
 }
 
 void Renderer::Render()
@@ -340,21 +339,17 @@ void Renderer::Render()
 
     // -------------------------------------------------------------------------------
     // Clear backbuffer
-    device_context_->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
-    device_context_->ClearDepthStencilView(backbuffer_depth_view_.Get(),
+    graphics_context_.device_context->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
+    graphics_context_.device_context->ClearDepthStencilView(backbuffer_depth_view_.Get(),
         D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f /*depth clear val*/, 0 /*stencil clear val*/);
 
     // -------------------------------------------------------------------------------
-    // Render scene
+    // Input Assembly
     
-    // Bind shaders
-    device_context_->VSSetShader(vertex_shader_.vs.Get(), nullptr, 0);
-    device_context_->PSSetShader(pixel_shader_.ps.Get(), nullptr, 0);
-
     // Bind Index and Vertex Buffers
     uint32 stride = sizeof(VertexPosUV);
     uint32 offset = 0;
-    device_context_->IASetVertexBuffers(
+    graphics_context_.device_context->IASetVertexBuffers(
         0,  // Slot we bind it to
         1,  // Num buffers
         vertex_buffer_.GetAddressOf(),    // pointer to the buffer
@@ -362,30 +357,38 @@ void Renderer::Render()
         &offset     // offset into the buffer
     );
 
-    device_context_->OMSetDepthStencilState(depth_stencil_state_.Get(), 1);
-    device_context_->IASetInputLayout(vertex_shader_.input_layout.Get());
-    device_context_->IASetIndexBuffer(index_buffer_.Get(), DXGI_FORMAT::DXGI_FORMAT_R16_UINT, 0);
-    device_context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    graphics_context_.device_context->IASetIndexBuffer(index_buffer_.Get(), DXGI_FORMAT::DXGI_FORMAT_R16_UINT, 0);
+    graphics_context_.device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    device_context_->PSSetShaderResources(0 /*slot*/, 1 /*num views*/, texture_srv_.GetAddressOf());
-    device_context_->PSSetSamplers(0, 1, texture_sampler_state_.GetAddressOf());
+    // -------------------------------------------------------------------------------
+    // Shader stages
+
+    // Bind shaders
+    graphics_context_.device_context->IASetInputLayout(vertex_shader_.input_layout.Get());
+    graphics_context_.device_context->VSSetShader(vertex_shader_.vs.Get(), nullptr, 0);
+    graphics_context_.device_context->PSSetShader(pixel_shader_.ps.Get(), nullptr, 0);
+
+
+    graphics_context_.device_context->OMSetDepthStencilState(depth_stencil_state_.Get(), 1);
+    graphics_context_.device_context->PSSetShaderResources(0 /*slot*/, 1 /*num views*/, texture_srv_.GetAddressOf());
+    graphics_context_.device_context->PSSetSamplers(0, 1, texture_sampler_state_.GetAddressOf());
 
     // Cube
-    device_context_->RSSetState(rs_double_sided_.Get());
-    device_context_->OMSetBlendState(blend_state_transparent_.Get(), nullptr, 0xffffffff);
+    graphics_context_.device_context->RSSetState(rs_double_sided_.Get());
+    graphics_context_.device_context->OMSetBlendState(blend_state_transparent_.Get(), nullptr, 0xffffffff);
 
     // Update the cbuffer
     Mat4 mat_world_ = XMMatrixRotationX(XMConvertToRadians(angle)) * XMMatrixTranslation(.5f, 0.0f, 0.5f);
     Mat4 mat_wvp_ = mat_world_ * camera_.GetView() * camera_.GetProjection();
     per_object_data_.wvp = mat_wvp_.Transpose(); // CPU: row major, GPU: col major! -> We have to transpose.
     per_object_data_.alpha = 0.25f;
-    device_context_->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
-    device_context_->VSSetConstantBuffers(0, 1, cbuffer_per_object_.GetAddressOf());
-    device_context_->PSSetConstantBuffers(0, 1, cbuffer_per_object_.GetAddressOf());
+    graphics_context_.device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
+    graphics_context_.device_context->VSSetConstantBuffers(0, 1, cbuffer_per_object_.GetAddressOf());
+    graphics_context_.device_context->PSSetConstantBuffers(0, 1, cbuffer_per_object_.GetAddressOf());
 
-    device_context_->DrawIndexed(_countof(cube_tex_indices_), 0 /*start idx*/, 0 /*idx offset*/);
+    graphics_context_.device_context->DrawIndexed(_countof(cube_tex_indices_), 0 /*start idx*/, 0 /*idx offset*/);
 
     // -------------------------------------------------------------------------------
     // Swap front buffer with backbuffer
-    DX11_VERIFY(swapchain_->Present(1, 0));
+    DX11_VERIFY(graphics_context_.swapchain->Present(1, 0));
 }

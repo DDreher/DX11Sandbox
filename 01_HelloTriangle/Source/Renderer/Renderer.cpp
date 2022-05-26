@@ -126,24 +126,23 @@ Renderer::Renderer(Window* window)
 #endif
 
     // Create swapchain and device
-    DX11_VERIFY(D3D11CreateDeviceAndSwapChain(
-        nullptr,    // video adapter to use. If null, use first adapter
-        D3D_DRIVER_TYPE_HARDWARE,   // Hardware driver -> Best performance
-        nullptr,    // Handle to dll that implements software rasterizer. Won't need this.
+    DX11_VERIFY(D3D11CreateDeviceAndSwapChain(nullptr,
+        D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
         create_device_flags,
         accepted_feature_levels, _countof(accepted_feature_levels),
         D3D11_SDK_VERSION,
         &swapchain_desc,
-        &swapchain_,
-        &device_,
+        &graphics_context_.swapchain,
+        &graphics_context_.device,
         &device_feature_level,
-        &device_context_));
+        &graphics_context_.device_context));
 
     // Get render target view from swapchain backbuffer
     // Even with triple buffering we only need a single render target view (?)
     ComPtr<ID3D11Texture2D> backbuffer;
-    DX11_VERIFY(swapchain_->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
-    DX11_VERIFY(device_->CreateRenderTargetView(
+    DX11_VERIFY(graphics_context_.swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
+    DX11_VERIFY(graphics_context_.device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
         nullptr,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
         &backbuffer_color_view_));
@@ -155,16 +154,16 @@ Renderer::Renderer(Window* window)
     viewport_.TopLeftY = 0.0f;
     viewport_.MinDepth = 0.0f;
     viewport_.MaxDepth = 1.0f;
-    device_context_->RSSetViewports(1, &viewport_);
+    graphics_context_.device_context->RSSetViewports(1, &viewport_);
 
     // Bind render target views to output merger stage of pipeline
-    device_context_->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), nullptr);
+    graphics_context_.device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), nullptr);
     
     // Scene Setup 
 
     // Load Shaders
-    vertex_shader_.LoadFromHlsl(device_.Get(), "assets/shaders/vs_simple.hlsl");
-    pixel_shader_.LoadFromHlsl(device_.Get(), "assets/shaders/ps_simple.hlsl");
+    vertex_shader_.LoadFromHlsl(graphics_context_.device.Get(), "assets/shaders/vs_triangle.hlsl");
+    pixel_shader_.LoadFromHlsl(graphics_context_.device.Get(), "assets/shaders/ps_triangle.hlsl");
 
     // Set up Vertex Buffer.
     D3D11_BUFFER_DESC vertex_buffer_desc = {};
@@ -176,7 +175,7 @@ Renderer::Renderer(Window* window)
     // Fill info about the initial data of the vertex buffer
     D3D11_SUBRESOURCE_DATA subresource_data = {};
     subresource_data.pSysMem = triangle_vertices_;
-    DX11_VERIFY(device_->CreateBuffer(&vertex_buffer_desc, &subresource_data, &vertex_buffer_));
+    DX11_VERIFY(graphics_context_.device->CreateBuffer(&vertex_buffer_desc, &subresource_data, &vertex_buffer_));
 
     // Set up Index Buffer
     D3D11_BUFFER_DESC index_buffer_desc = {};
@@ -187,26 +186,26 @@ Renderer::Renderer(Window* window)
 
     subresource_data = {};
     subresource_data.pSysMem = triangle_indices_;
-    DX11_VERIFY(device_->CreateBuffer(&index_buffer_desc, &subresource_data, &index_buffer_));
+    DX11_VERIFY(graphics_context_.device->CreateBuffer(&index_buffer_desc, &subresource_data, &index_buffer_));
 }
 
 void Renderer::Render()
 {
     // -------------------------------------------------------------------------------
     // Clear backbuffer
-    device_context_->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
+    graphics_context_.device_context->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
 
     // -------------------------------------------------------------------------------
     // Render scene
     
     // Bind shaders
-    device_context_->VSSetShader(vertex_shader_.vs.Get(), nullptr, 0);
-    device_context_->PSSetShader(pixel_shader_.ps.Get(), nullptr, 0);
+    graphics_context_.device_context->VSSetShader(vertex_shader_.vs.Get(), nullptr, 0);
+    graphics_context_.device_context->PSSetShader(pixel_shader_.ps.Get(), nullptr, 0);
 
     // Bind Index and Vertex Buffers
     uint32 stride = sizeof(VertexPosColor);
     uint32 offset = 0;
-    device_context_->IASetVertexBuffers(
+    graphics_context_.device_context->IASetVertexBuffers(
         0,  // Slot we bind it to
         1,  // Num buffers
         vertex_buffer_.GetAddressOf(),    // pointer to the buffer
@@ -214,13 +213,13 @@ void Renderer::Render()
         &offset     // offset into the buffer
     );
 
-    device_context_->IASetInputLayout(vertex_shader_.input_layout.Get());
-    device_context_->IASetIndexBuffer(index_buffer_.Get(), DXGI_FORMAT::DXGI_FORMAT_R16_UINT, 0);
-    device_context_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    graphics_context_.device_context->IASetInputLayout(vertex_shader_.input_layout.Get());
+    graphics_context_.device_context->IASetIndexBuffer(index_buffer_.Get(), DXGI_FORMAT::DXGI_FORMAT_R16_UINT, 0);
+    graphics_context_.device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    device_context_->DrawIndexed(_countof(triangle_indices_), 0 /*start idx*/, 0 /*idx offset*/);
+    graphics_context_.device_context->DrawIndexed(_countof(triangle_indices_), 0 /*start idx*/, 0 /*idx offset*/);
 
     // -------------------------------------------------------------------------------
     // Swap front buffer with backbuffer
-    DX11_VERIFY(swapchain_->Present(1, 0));
+    DX11_VERIFY(graphics_context_.swapchain->Present(1, 0));
 }

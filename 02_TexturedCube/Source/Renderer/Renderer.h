@@ -12,6 +12,7 @@
 #include "Core/Window.h"
 #include "Renderer/Camera.h"
 #include "Renderer/DX11Types.h"
+#include "Renderer/GraphicsContext.h"
 
 using namespace DirectX;
 
@@ -20,7 +21,7 @@ struct VertexShader
     void LoadFromHlsl(ID3D11Device* const device, const std::string& path);
 
     ComPtr<ID3D11VertexShader> vs = nullptr;
-    ComPtr<ID3D11InputLayout> input_layout = nullptr; // Describes order and type of input data
+    ComPtr<ID3D11InputLayout> input_layout = nullptr;
 };
 
 struct PixelShader
@@ -29,62 +30,20 @@ struct PixelShader
     ComPtr<ID3D11PixelShader> ps = nullptr;
 };
 
-struct VertexPos
+struct VertexPosUV
 {
-    VertexPos() {}
-    VertexPos(Vec3 in_pos)
-        : pos(in_pos)
+    bool operator==(VertexPosUV const& other) const
     {
-    }
-
-    VertexPos(float x, float y, float z)
-        : pos(x, y, z)
-    {
+        return pos == other.pos && uv == other.uv;
     }
 
     Vec3 pos;
-
-    static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] = 
-    {
-        { 
-            "POSITION", // Just a name for the layout element. Used for mapping in the VS
-            0,          // Additional index for mapping. Here we'll actually have POSITION0
-            DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT,    // Format of the element -> this will be a vec3f
-            0,  // input slot index, range 0-15.
-            0,  // Memory offset (bytes). Position is at the start of the memory block -> 0.
-                // If we add color in same input slot, its offset would be sizeof(vec3f) = 12 bytes
-            D3D11_INPUT_PER_VERTEX_DATA,    // InputSlotClass - Used for instancing (?)
-            0   // InstanceDataStepRate - Also used for instancing (?)
-        },
-    };
-
-    static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
-};
-
-
-struct VertexPosColor
-{
-    Vec3 pos_;
-    Vec3 color_;
+    Vec2 uv;
 
     static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
     {
-        { "POSITION", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
-
-    static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
-};
-
-struct VertexPosUV
-{
-    Vec3 pos_;
-    Vec2 uv_;
-
-    static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "UV", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*input slot*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "UV", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT, 0 /*input slot*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
     static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
@@ -114,10 +73,10 @@ private:
     template<>
     ID3D11VertexShader* CreateShader<ID3D11VertexShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(device_ != nullptr);
+        CHECK(graphics_context_.device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11VertexShader* shader = nullptr;
-        device_->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        graphics_context_.device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
@@ -126,10 +85,10 @@ private:
     template<>
     ID3D11PixelShader* CreateShader<ID3D11PixelShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(device_ != nullptr);
+        CHECK(graphics_context_.device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11PixelShader* shader = nullptr;
-        device_->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        graphics_context_.device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
@@ -138,10 +97,7 @@ private:
     ID3D11VertexShader* CreateVertexShader(const std::string& path);
     ID3D11PixelShader* CreatePixelShader(const std::string& path);
 
-    ComPtr<ID3D11Device> device_ = nullptr;                // Used for everything besides rendering :P Useful for multithreading
-    ComPtr<ID3D11DeviceContext> device_context_ = nullptr; // Used to configure the rendering pipeline and draw geometry
-
-    ComPtr<IDXGISwapChain> swapchain_ = nullptr;
+    GraphicsContext graphics_context_;
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
 
@@ -179,16 +135,6 @@ private:
     ComPtr<ID3D11SamplerState> texture_sampler_state_ = nullptr;
 
     Camera camera_;
-
-    uint16 cube_indices_[2 * 3 * 6] =
-    {
-        0, 1, 2, 0, 2, 3,
-        4, 6, 5, 4, 7, 6,
-        4, 5, 1, 4, 1, 0,
-        3, 2, 6, 3, 6, 7,
-        1, 5, 6, 1, 6, 2,
-        4, 0, 3, 4, 3, 7
-    };
 
     VertexPosUV cube_textured_vertices_[4*6] =
     {
