@@ -69,3 +69,13 @@ function AddAssimp(isTarget)
             "assimp-vc143-mt.lib"
         }
 end
+
+function AddImGui()  
+    defines { "MODULE_IMGUI" }
+	includedirs "%{wks.location}/ThirdParty/ImGui/"
+
+    links
+    {
+        "ImGui"
+    }
+end

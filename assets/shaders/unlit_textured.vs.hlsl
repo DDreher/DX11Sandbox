@@ -1,10 +1,11 @@
+#include <common.hlsli>
 
-cbuffer per_frame_data : register(b0)
+cbuffer PerFrameData : register(b0)
 {
     float4x4 vp;
 };
 
-cbuffer per_object_data : register(b1)
+cbuffer PerInstanceData : register(b1)
 {
     float4x4 w;
 };
@@ -22,7 +23,6 @@ struct VSOutput
     float3 normal : NORMAL0;
     float2 uv : UV0;
 };
-
 
 VSOutput Main(VSInput input)
 {

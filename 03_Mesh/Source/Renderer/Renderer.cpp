@@ -19,7 +19,6 @@ Renderer::Renderer(Window* window)
     swapchain_desc.BufferDesc.Width = static_cast<UINT>(window->GetWidth());
     swapchain_desc.BufferDesc.Height = static_cast<UINT>(window->GetHeight());
     swapchain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;  // Expected to be normalized to range 0 - 1
-    //swapchain_desc.BufferDesc.RefreshRate = 0; // VSync
     swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;   // Describes surface usage and CPU access for backbuffer
     swapchain_desc.SampleDesc.Count = 1;
     swapchain_desc.SampleDesc.Quality = 0;
@@ -52,7 +51,7 @@ Renderer::Renderer(Window* window)
         &device_feature_level,
         &graphics_context_->device_context));
 
-    graphics_context_->render_state_cache = MakeShared<RenderStateCache>(graphics_context_);
+    graphics_context_->render_state_cache = MakeUnique<RenderStateCache>(graphics_context_.get());
 
     // Get render target view from swapchain backbuffer
     // Even with triple buffering we only need a single render target view
@@ -94,31 +93,50 @@ Renderer::Renderer(Window* window)
     // Bind render target views to output merger stage of pipeline
     graphics_context_->device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
     
+    // Bind default global render states
+    graphics_context_->device_context->VSSetSamplers(0, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_CLAMP).GetAddressOf());
+    graphics_context_->device_context->VSSetSamplers(1, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_WRAP).GetAddressOf());
+    graphics_context_->device_context->VSSetSamplers(2, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_CLAMP).GetAddressOf());
+    graphics_context_->device_context->VSSetSamplers(3, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_WRAP).GetAddressOf());
+    graphics_context_->device_context->PSSetSamplers(0, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_CLAMP).GetAddressOf());
+    graphics_context_->device_context->PSSetSamplers(1, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_WRAP).GetAddressOf());
+    graphics_context_->device_context->PSSetSamplers(2, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_CLAMP).GetAddressOf());
+    graphics_context_->device_context->PSSetSamplers(3, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_WRAP).GetAddressOf());
+
     // Scene Setup 
     mesh_.mesh_data_ = MeshData::LoadFromFile(*graphics_context_, "assets/meshes/BOSS_model_final.fbx");
 
-    SharedPtr<Material> material_unlit_textured = MakeShared<Material>();
-    material_unlit_textured->vs_ = MakeShared<Shader<EShaderType::VS>>(*graphics_context_, "assets/shaders/vs_unlit_textured.hlsl");
-    material_unlit_textured->ps_ = MakeShared<Shader<EShaderType::PS>>(*graphics_context_, "assets/shaders/ps_unlit_textured.hlsl");
-    material_unlit_textured->tex_ = Texture::LoadFromFile(*graphics_context_, "assets/textures/BOSS_texture_final.png");
-    material_unlit_textured->is_two_sided_ = false;
-    material_unlit_textured->Create(*graphics_context_);
+    SharedPtr<Texture> tex = Texture::LoadFromFile(*graphics_context_, "assets/textures/BOSS_texture_final.png");
+
+    MaterialDesc material_unlit_textured_desc
+    {
+        .vs_path = "assets/shaders/unlit_textured.vs.hlsl",
+        .ps_path = "assets/shaders/unlit_textured.ps.hlsl",
+        .rasterizer_state = RasterizerState::CULL_CCW,
+        .blend_state = BlendState::BLEND_OPAQUE,
+        .depth_stencil_state = DepthStencilState::DEFAULT
+    };
+
+    SharedPtr<Material> material_unlit_textured = MakeShared<Material>(material_unlit_textured_desc);
+    material_unlit_textured->Create(graphics_context_.get());
+    material_unlit_textured->SetTexture("tex", tex);
+    material_unlit_textured->SetParam("tint", { 1.0f, 0.0f, 1.0f });
+
     mesh_.material_ = material_unlit_textured;
     mesh_.transform_.scaling_ = { 1.0f };
     mesh_.transform_.translation_ = { 0.0f, -1.0f, 0.0f };
 
     // Set up cbuffer
-    D3D11_BUFFER_DESC cbuffer_per_frame_desc = {};
-    cbuffer_per_frame_desc.Usage = D3D11_USAGE_DEFAULT;   // Read / Write access
-    cbuffer_per_frame_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbuffer_per_frame_desc.ByteWidth = sizeof(CBufferPerFrame);
-    cbuffer_per_frame_desc.CPUAccessFlags = 0;
-    DX11_VERIFY(graphics_context_->device->CreateBuffer(&cbuffer_per_frame_desc, nullptr, &cbuffer_per_frame_));
+    cbuffer_per_frame_ = MakeUnique<ConstantBuffer>(graphics_context_.get(), sizeof(CBufferPerFrame));
 
     // Set up camera
     float aspect_ratio = window->GetWidth() / static_cast<float>(window->GetHeight());
     camera_ = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
     camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
+}
+
+Renderer::~Renderer()
+{
 }
 
 void Renderer::Render()
@@ -136,15 +154,15 @@ void Renderer::Render()
 
     // -------------------------------------------------------------------------------
     // Render scene
-    graphics_context_->device_context->OMSetDepthStencilState(graphics_context_->render_state_cache->GetDepthStencilState().Get(), 1);
 
     // Update per frame cbuffer
     Mat4 mat_vp = camera_.GetViewProjection();
-    per_frame_data_.vp = mat_vp.Transpose(); // CPU: row major, GPU: col major! -> We have to transpose.
+    per_frame_data_.mat_view_projection = mat_vp.Transpose(); // CPU: row major, GPU: col major! -> We have to transpose.
                                              // See: https://stackoverflow.com/questions/41405994/hlsl-mul-and-d3dxmatrix-order-mismatch
-    graphics_context_->device_context->UpdateSubresource(cbuffer_per_frame_.Get(), 0, nullptr, &per_frame_data_, 0, 0);
-    graphics_context_->device_context->VSSetConstantBuffers(0, 1, cbuffer_per_frame_.GetAddressOf());
-    graphics_context_->device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_.GetAddressOf());
+    cbuffer_per_frame_->Upload(reinterpret_cast<uint8*>(&per_frame_data_), sizeof(CBufferPerFrame));
+
+    graphics_context_->device_context->VSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
+    graphics_context_->device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
 
     // Submit draw commands
     mesh_.Render(*graphics_context_);

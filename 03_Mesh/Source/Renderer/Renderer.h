@@ -11,6 +11,7 @@
 
 #include "Core/Window.h"
 #include "Renderer/Camera.h"
+#include "Renderer/ConstantBufferTypes.h"
 #include "Renderer/DX11Types.h"
 #include "Renderer/GraphicsContext.h"
 #include "Renderer/IndexBuffer.h"
@@ -21,25 +22,20 @@
 
 using namespace DirectX;
 
-struct CBufferPerFrame
-{
-    Mat4 vp;
-};
-
 class Renderer
 {
 public:
     Renderer(Window* window);
     Renderer(const Renderer&) = delete;                 // <-- No copy!
     Renderer& operator=(const Renderer&) = delete;      // <-/
-    ~Renderer() = default;
+    ~Renderer();
 
     void Render();
 
 private:
     static MeshData LoadModel(GraphicsContext const& context, std::string const& asset_path);
 
-    SharedPtr<GraphicsContext> graphics_context_ = MakeShared<GraphicsContext>();
+    UniquePtr<GraphicsContext> graphics_context_ = MakeUnique<GraphicsContext>();
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
 
@@ -54,7 +50,7 @@ private:
     Mesh mesh_;
 
     // Shader Resources
-    ComPtr<ID3D11Buffer> cbuffer_per_frame_ = nullptr; // AKA Uniform Buffers in OpenGL land
+    UniquePtr<ConstantBuffer> cbuffer_per_frame_;
 
     // General render settings
     float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
