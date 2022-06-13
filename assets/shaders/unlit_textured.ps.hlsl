@@ -1,12 +1,13 @@
-Texture2D tex;
-SamplerState tex_sampler;
+#include <common.hlsli>
 
-cbuffer per_frame_data
+Texture2D tex;
+
+cbuffer PerFrameData : register(b0)
 {
     float4x4 vp;
 };
 
-cbuffer per_object_data
+cbuffer PerObjectData : register(b1)
 {
     float4x4 w;
 };
@@ -20,6 +21,6 @@ struct PSInput
 
 float4 Main(PSInput input) : SV_TARGET
 {
-    float4 color = tex.Sample(tex_sampler, input.uv);
+    float4 color = tex.Sample(sampler_linear_wrap, input.uv);
     return color;
 }

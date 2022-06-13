@@ -13,12 +13,13 @@ void AppHelloTriangle::Init()
 
 void AppHelloTriangle::Cleanup()
 {
-    renderer_.release();
+    renderer_.reset();
     BaseApplication::Cleanup();
 }
 
 void AppHelloTriangle::Update(double dt)
 {
+    BaseApplication::Update(dt);
 }
 
 void AppHelloTriangle::Render()

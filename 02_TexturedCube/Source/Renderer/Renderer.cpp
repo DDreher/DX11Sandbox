@@ -368,14 +368,13 @@ void Renderer::Render()
     graphics_context_.device_context->VSSetShader(vertex_shader_.vs.Get(), nullptr, 0);
     graphics_context_.device_context->PSSetShader(pixel_shader_.ps.Get(), nullptr, 0);
 
-
-    graphics_context_.device_context->OMSetDepthStencilState(depth_stencil_state_.Get(), 1);
     graphics_context_.device_context->PSSetShaderResources(0 /*slot*/, 1 /*num views*/, texture_srv_.GetAddressOf());
     graphics_context_.device_context->PSSetSamplers(0, 1, texture_sampler_state_.GetAddressOf());
 
     // Cube
     graphics_context_.device_context->RSSetState(rs_double_sided_.Get());
     graphics_context_.device_context->OMSetBlendState(blend_state_transparent_.Get(), nullptr, 0xffffffff);
+    graphics_context_.device_context->OMSetDepthStencilState(depth_stencil_state_.Get(), 1);
 
     // Update the cbuffer
     Mat4 mat_world_ = XMMatrixRotationX(XMConvertToRadians(angle)) * XMMatrixTranslation(.5f, 0.0f, 0.5f);

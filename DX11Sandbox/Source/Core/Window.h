@@ -1,5 +1,6 @@
 #pragma once
 
+#include "SDL_events.h"
 #include "SDL_syswm.h"
 #include "SDL_video.h"
 
@@ -9,7 +10,7 @@ public:
     Window(const std::string& title, uint32 width, uint32 height);
     ~Window();
 
-    void Update();
+    void HandleSDLEvent(const SDL_Event& sdl_event);
 
     void SetSize(uint32 width, uint32 height);
 

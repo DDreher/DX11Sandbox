@@ -3,11 +3,10 @@
 #include "DX11Util.h"
 #include "GraphicsContext.h"
 
-RenderStateCache::RenderStateCache(SharedPtr<GraphicsContext> context)
+RenderStateCache::RenderStateCache(GraphicsContext* context)
     : context_(context)
 {
     CHECK(context != nullptr);
-
     Init();
 }
 
@@ -194,12 +193,14 @@ void RenderStateCache::InitCommonRasterizerStates()
 
 void RenderStateCache::InitCommonDepthStencilStates()
 {
-    D3D11_DEPTH_STENCIL_DESC depth_stencil_desc = {};
-    depth_stencil_desc.DepthEnable = TRUE;
-    depth_stencil_desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
-    depth_stencil_desc.DepthFunc = D3D11_COMPARISON_LESS;
-    depth_stencil_desc.StencilEnable = FALSE;
-    DX11_VERIFY(context_->device->CreateDepthStencilState(&depth_stencil_desc, &default_depth_stencil_state_));
+    ComPtr<ID3D11DepthStencilState> state;
+    D3D11_DEPTH_STENCIL_DESC desc = {};
+    desc.DepthEnable = TRUE;
+    desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    desc.DepthFunc = D3D11_COMPARISON_LESS;
+    desc.StencilEnable = FALSE;
+    DX11_VERIFY(context_->device->CreateDepthStencilState(&desc, &state));
+    common_depth_stencil_state_descriptors_[DepthStencilState::DEFAULT] = desc;
 }
 
 void RenderStateCache::InitCommonSamplerStates()
@@ -341,11 +342,28 @@ ComPtr<ID3D11RasterizerState> RenderStateCache::GetRasterizerState(RasterizerSta
     return GetRasterizerState(desc);
 }
 
-ComPtr<ID3D11DepthStencilState> RenderStateCache::GetDepthStencilState()
+ComPtr<ID3D11DepthStencilState> RenderStateCache::GetDepthStencilState(const D3D11_DEPTH_STENCIL_DESC& desc)
 {
-    // TODO: Add functionality to create depth stencil states on the fly...
-    // For now we simply return the default state.
-    return default_depth_stencil_state_;
+    CHECK(context_ != nullptr);
+    CHECK(context_->device != nullptr);
+
+    auto it = depth_stencil_state_cache_.find(desc);
+    if (it != depth_stencil_state_cache_.end())
+    {
+        return it->second;
+    }
+
+    ComPtr<ID3D11DepthStencilState> state_ptr;
+    DX11_VERIFY(context_->device->CreateDepthStencilState(&desc, &state_ptr));
+    depth_stencil_state_cache_[desc] = state_ptr;
+
+    return state_ptr;
+}
+
+ComPtr<ID3D11DepthStencilState> RenderStateCache::GetDepthStencilState(DepthStencilState state)
+{
+    D3D11_DEPTH_STENCIL_DESC desc = common_depth_stencil_state_descriptors_[state];
+    return GetDepthStencilState(desc);
 }
 
 ComPtr<ID3D11SamplerState> RenderStateCache::GetSamplerState(const D3D11_SAMPLER_DESC& desc)

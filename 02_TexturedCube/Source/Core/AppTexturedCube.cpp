@@ -13,12 +13,13 @@ void AppTexturedCube::Init()
 
 void AppTexturedCube::Cleanup()
 {
-    renderer_.release();
+    renderer_.reset();
     BaseApplication::Cleanup();
 }
 
 void AppTexturedCube::Update(double dt)
 {
+    BaseApplication::Update(dt);
 }
 
 void AppTexturedCube::Render()
