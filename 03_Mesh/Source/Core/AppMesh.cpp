@@ -10,20 +10,18 @@ AppMesh::AppMesh()
 void AppMesh::Init()
 {
     BaseApplication::Init();
-    AssetLibrary::Init();
     renderer_ = MakeUnique<Renderer>(window_);
 }
 
 void AppMesh::Cleanup()
 {
-    renderer_.release();
-    AssetLibrary::Destroy();
-
+    renderer_.reset();
     BaseApplication::Cleanup();
 }
 
 void AppMesh::Update(double dt)
 {
+    BaseApplication::Update(dt);
 }
 
 void AppMesh::Render()

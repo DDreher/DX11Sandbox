@@ -1,50 +1,21 @@
 #pragma once
-#include <d3dcompiler.h>
+
+#include <d3d11shader.h>
 
 #include "Core/FileIO.h"
+#include "Renderer/ConstantBuffer.h"
 #include "Renderer/DX11Types.h"
 #include "Renderer/DX11Util.h"
 #include "Renderer/GraphicsContext.h"
-#include "Vertex.h"
-#include "Bindable.h"
+#include "Renderer/Bindable.h"
+#include "Renderer/Vertex.h"
+
+class ConstantBuffer;
 
 struct ShaderCompiler
 {
-    static HRESULT Compile(const std::vector<char>& shader_bytes, const char* entry_point, const char* shader_target, ComPtr<ID3DBlob>& out_shader_blob)
-    {
-        CHECK(shader_bytes.size() > 0);
-
-        // See https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/d3dcompile-constants
-        uint32_t compile_flags = D3DCOMPILE_ENABLE_STRICTNESS; 
-#ifndef NDEBUG
-        compile_flags |= D3DCOMPILE_DEBUG;
-#endif
-
-        ComPtr<ID3DBlob> error_blob = nullptr;
-        HRESULT result = D3DCompile
-        (
-            shader_bytes.data(),    // src to compile
-            shader_bytes.size(),    // src size
-            nullptr,                // src name
-            nullptr,                // defines
-            nullptr,                // includes
-            entry_point,
-            shader_target,
-            compile_flags,          // compile constants
-            0,                      // effect constants. ignored => 0
-            &out_shader_blob,       // the compiled shader
-            &error_blob             // error information
-        );
-
-        // Sanity Check
-        if (FAILED(result) && error_blob != nullptr)
-        {
-            char* error_str = static_cast<char*>(error_blob->GetBufferPointer());
-            LOG_ERROR("Shader compilation failed:\n{}", error_str);
-        }
-
-        return result;
-    }
+    static HRESULT Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const char* entry_point,
+        const char* shader_target, ComPtr<ID3DBlob>& out_shader_blob);
 };
 
 enum class EShaderType
@@ -57,101 +28,68 @@ enum class EShaderType
     HS,
 };
 
-template<EShaderType>
-struct ShaderTargetLookup;
-
-template<>
-struct ShaderTargetLookup<EShaderType::VS>
+struct TextureBindingDesc
 {
-    static inline const char* VERSION = "vs_5_0";
+    std::string name;
+    UINT slot;
 };
 
-template<>
-struct ShaderTargetLookup<EShaderType::PS>
+class ShaderBase : public IBindable
 {
-    static inline const char* VERSION = "ps_5_0";
-};
+    friend class Material;
 
-template<EShaderType>
-struct ShaderTypeToNativeTypeMap;
-
-template<>
-struct ShaderTypeToNativeTypeMap<EShaderType::VS>
-{
-    typedef ID3D11VertexShader Type;
-};
-
-template<>
-struct ShaderTypeToNativeTypeMap<EShaderType::PS>
-{
-    typedef ID3D11PixelShader Type;
-};
-
-template<EShaderType T>
-class Shader
-{
 public:
-    typedef typename ShaderTypeToNativeTypeMap<T>::Type NativeType;
+    ShaderBase(GraphicsContext* context, const std::string& asset_path, EShaderType shader_type);
+    virtual ~ShaderBase();
 
-    Shader(const GraphicsContext& context, const std::string& asset_path)
-        : asset_path_(asset_path)
-    {
-        bool success = Load(context);
-        CHECK(success);
-    }
+    bool LoadFromFile(const std::string asset_path);
+    bool Compile(const GraphicsContext& context, const std::vector<char>& bytes);
+    virtual void Create(GraphicsContext& context) {};
 
-    ~Shader() = default;
+protected:
+    virtual void Reflect(GraphicsContext& context);
 
-    const ComPtr<NativeType>& GetNativePtr() const { return native_shader_; }
-    const ComPtr<ID3DBlob>& GetBlob() const { return shader_blob_; }
-
-    bool Load(const GraphicsContext& graphics_context)
-    {
-        LOG("Loading shader: {}", asset_path_);
-
-        std::vector<char> shader_bytes = FileIO::ReadFile(asset_path_);
-        if FAILED(ShaderCompiler::Compile(shader_bytes, "Main", ShaderTargetLookup<T>::VERSION, shader_blob_))
-        {
-            return false;
-        }
-
-        native_shader_ = Shader::Create<T>(graphics_context, shader_blob_);
-        if(native_shader_ == nullptr)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    template<EShaderType T>
-    static auto Create(const GraphicsContext& graphics_context, const ComPtr<ID3DBlob>& shader_blob);
-
-    template<>
-    static auto Create<EShaderType::VS>(const GraphicsContext& graphics_context, const ComPtr<ID3DBlob>& shader_blob)
-    {
-        CHECK(graphics_context.device != nullptr);
-        CHECK(shader_blob != nullptr);
-        NativeType* native_shader = nullptr;
-        HRESULT result = graphics_context.device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), nullptr, &native_shader);
-        CHECK(native_shader != nullptr);
-
-        return native_shader;
-    }
-
-    template<>
-    static auto Create<EShaderType::PS>(const GraphicsContext& graphics_context, const ComPtr<ID3DBlob>& shader_blob)
-    {
-        CHECK(graphics_context.device != nullptr);
-        CHECK(shader_blob != nullptr);
-        NativeType* native_shader = nullptr;
-        HRESULT result = graphics_context.device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), nullptr, &native_shader);
-        CHECK(native_shader != nullptr);
-        return native_shader;
-    }
-
-private:
+    EShaderType shader_type_;
     std::string asset_path_;
     ComPtr<ID3DBlob> shader_blob_;
-    ComPtr<NativeType> native_shader_;
+    ComPtr<ID3D11ShaderReflection> shader_reflection_;
+    D3D11_SHADER_DESC shader_desc_;
+
+    std::vector<char> shader_code_;
+    GraphicsContext* context_ = nullptr;
+    //std::vector<SharedPtr<ConstantBuffer>> constant_buffers_;
+
+    std::vector<CBufferBindingDesc> cbuffer_bindings_;
+    std::vector<TextureBindingDesc> texture_bindings_;
+};
+
+class VertexShader : public ShaderBase
+{
+public:
+    VertexShader(GraphicsContext* context, const std::string& asset_path);
+    virtual ~VertexShader() {};
+
+    virtual void Create(GraphicsContext& context) override;
+    virtual void Bind(GraphicsContext& context) override;
+
+protected:
+    virtual void Reflect(GraphicsContext& context) override;
+
+    void CreateInputLayoutFromReflection(const GraphicsContext& context);
+
+    ComPtr<ID3D11VertexShader> native_ptr_;
+    ComPtr<ID3D11InputLayout> input_layout_;
+};
+
+class PixelShader : public ShaderBase
+{
+public:
+    PixelShader(GraphicsContext* context, const std::string& asset_path);
+    virtual ~PixelShader() {};
+
+    virtual void Create(GraphicsContext& context) override;
+    virtual void Bind(GraphicsContext& context) override;
+
+protected:
+    ComPtr<ID3D11PixelShader> native_ptr_;
 };

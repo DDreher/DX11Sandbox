@@ -4,9 +4,22 @@
 
 struct MathUtils
 {
-    static float DegToRad(float f)
+    static float DegToRad(float value)
     {
-        return DirectX::XMConvertToRadians(f);
+        return DirectX::XMConvertToRadians(value);
+    }
+
+    template <typename T>
+    static inline T AlignToBytes(T value, size_t bytes)
+    {
+        const size_t byte_mask = bytes - 1;
+        return static_cast<T>((static_cast<size_t>(value) + byte_mask) & ~byte_mask);
+    }
+
+    template <typename T>
+    static inline bool IsAligned(T value, size_t bytes)
+    {
+        return 0 == (static_cast<size_t>(value) & (bytes - 1));
     }
 };
 

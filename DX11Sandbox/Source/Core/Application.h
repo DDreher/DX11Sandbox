@@ -16,6 +16,7 @@ protected:
     virtual void Cleanup();
 
     virtual void Update(double dt);
+    virtual void HandleSDLEvent(const SDL_Event& sdl_event);
     virtual void Render();
 
     void InitWindow();

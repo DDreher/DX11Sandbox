@@ -1,32 +1,70 @@
 #pragma once
-#include "Bindable.h"
-#include "GraphicsContext.h"
-#include "Shader.h"
-#include "Texture.h"
+#include "Renderer/Bindable.h"
+#include "Renderer/ConstantBuffer.h"
+#include "Renderer/GraphicsContext.h"
+#include "Renderer/Shader.h"
+#include "Renderer/Texture.h"
+
+struct TextureParameter
+{
+    std::string name;
+    uint32 slot = 0;
+    SharedPtr<Texture> tex;
+};
+
+struct MaterialDesc
+{
+    std::string vs_path;
+    std::string ps_path;
+    RasterizerState rasterizer_state;
+    BlendState blend_state;
+    DepthStencilState depth_stencil_state;
+};
 
 class Material : public IBindable
 {
 public:
+    Material(const MaterialDesc& desc);
+    ~Material();
+
     virtual void Bind(GraphicsContext& context) override;
 
-    void Create(const GraphicsContext& context);
+    void Create(GraphicsContext* context);
 
     void SetTexture(const std::string& param_name, SharedPtr<Texture> texture);
-    void SetVec3(const std::string& param_name, Vec3 val);
-    void SetVec4(const std::string& param_name, Vec4 val);
-    void SetFloat(const std::string& param_name, float val);
-    void SetInt(const std::string& param_name, int32 val);
-    void SetBool(const std::string& param_name, bool val);
+    void SetParam(const std::string& param_name, Vec3 val);
+    void SetParam(const std::string& param_name, Vec4 val);
+    void SetParam(const std::string& param_name, float val);
+    void SetParam(const std::string& param_name, int32 val);
+    void SetParam(const std::string& param_name, bool val);
+
+    void SetBlendState(const BlendState& state)
+    {
+        blend_state_ = state;
+    }
+
+    void SetDepthStencilState(const DepthStencilState& state)
+    {
+        depth_stencil_state_ = state;
+    }
+
+    void SetRasterizerState(const RasterizerState& state)
+    {
+        rasterizer_state_ = state;
+    }
 
 public:
-    SharedPtr<Shader<EShaderType::VS>> vs_ = nullptr;
-    SharedPtr<Shader<EShaderType::PS>> ps_ = nullptr;
+    std::string vs_path_;
+    UniquePtr<VertexShader> vs_;
+    std::string ps_path_;
+    UniquePtr<PixelShader> ps_;
 
+    RasterizerState rasterizer_state_;
     BlendState blend_state_;
-    bool is_two_sided_ = false;
+    DepthStencilState depth_stencil_state_;
 
-    SharedPtr<Texture> tex_ = nullptr;
+    ComPtr<ID3D11InputLayout> input_layout_ = nullptr;
 
-    ComPtr<ID3D11InputLayout> input_layout_ = nullptr; // Describes order and type of input data
-    ComPtr<ID3D11RasterizerState> rasterizer_state_ = nullptr;
+    std::vector<UniquePtr<ConstantBuffer>> cbuffers_;
+    std::unordered_map<std::string, TextureParameter> texture_parameters_;
 };

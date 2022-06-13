@@ -28,13 +28,9 @@ void BaseApplication::MainLoop()
 
     while (window_->GetIsClosed() == false)
     {
-        if (window_ != nullptr)
-        {
-            window_->Update();
-        }
-
         tick_timer_.Update();
         double frame_time = tick_timer_.GetAccumulatedTime();
+
         while(frame_time > 0.0)
         {
             double delta_time = std::min(frame_time, TickTimer::TICK_TIME);
@@ -71,9 +67,23 @@ void BaseApplication::DestroyWindow()
 
 void BaseApplication::Update(double dt)
 {
+    SDL_Event sdl_event;
+    while (SDL_PollEvent(&sdl_event))
+    {
+        HandleSDLEvent(sdl_event);
+    }
+
     for(SharedPtr<ISystem> system : systems_)
     {
         system->Update(dt);
+    }
+}
+
+void BaseApplication::HandleSDLEvent(const SDL_Event& sdl_event)
+{
+    if(window_ != nullptr)
+    {
+        window_->HandleSDLEvent(sdl_event);
     }
 }
 

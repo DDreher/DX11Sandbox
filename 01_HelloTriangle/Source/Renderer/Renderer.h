@@ -11,9 +11,27 @@
 
 #include "Core/Window.h"
 #include "Renderer/GraphicsContext.h"
-#include "Renderer/Vertex.h"
 
 using namespace DirectX;
+
+struct VertexPosColor
+{
+    Vec3 pos;
+    Vec3 color;
+
+    bool operator==(VertexPosColor const& other) const
+    {
+        return pos == other.pos && color == other.color;
+    }
+
+    static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "COLOR", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
+};
 
 struct VertexShader
 {

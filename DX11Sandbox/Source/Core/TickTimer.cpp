@@ -9,7 +9,9 @@ TickTimer::TickTimer()
 void TickTimer::Update()
 {
     current_ = std::chrono::high_resolution_clock::now();
-    const double elapsed = static_cast<double>(std::chrono::duration_cast<std::chrono::seconds>(current_ - prev_).count());
+    std::chrono::duration<double> duration = current_ - prev_;
+    const double elapsed = duration.count();
+
     prev_ = current_;
     time_accumulator_ += elapsed;
 

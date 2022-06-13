@@ -1,10 +1,11 @@
 #pragma once
-#include "Bindable.h"
-#include "GraphicsContext.h"
-#include "IndexBuffer.h"
-#include "Material.h"
-#include "VertexBuffer.h"
 #include "Engine/Transform.h"
+#include "Renderer/Bindable.h"
+#include "Renderer/ConstantBufferTypes.h"
+#include "Renderer/GraphicsContext.h"
+#include "Renderer/IndexBuffer.h"
+#include "Renderer/Material.h"
+#include "Renderer/VertexBuffer.h"
 
 struct MeshData : public IBindable
 {
@@ -154,16 +155,10 @@ struct CubeMeshData : public MeshData
     }
 };
 
-struct CBufferPerObject
-{
-    Mat4 w;
-    Vec3 color = Vec3(1.0f);
-    float padding;
-};
-
 struct Mesh : public IBindable
 {
     Mesh();
+    ~Mesh();
 
     void Update(float dt);
     void Render(GraphicsContext& context);
@@ -179,3 +174,8 @@ struct Mesh : public IBindable
     CBufferPerObject per_object_data_;
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr;
 };
+
+//struct Model
+//{
+//    std::vector<Mesh> 
+//};

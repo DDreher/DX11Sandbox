@@ -29,8 +29,10 @@ Tl;dr: I know the code's dirty ;) Don't judge me.
 <img src="doc/images/01_hello_triangle.png?raw=true" alt="Image of Subproject: 01-HelloTriangle" height="320px">
 </p>
 
-The very minimum to get started with a graphics API:    
-A colored triangle.
+Explored topics:
+* Setting up a bare minimum render pipeline
+* Write, load and compile bare minimum shaders
+* Draw a colored triangle
 
 ### [02 - Texturing](02_TexturedCube/Source/)
 
@@ -38,8 +40,11 @@ A colored triangle.
 <img src="doc/images/02_textured_cube.png?raw=true" alt="Image of Subproject: 02-TexturedCube" height="320px">
 </p>
 
-A rotating, textured, semi-transparent cube.    
-Used to explore constant buffers, different blend states.
+Explored topics:
+* Rendering of meshes from in-memory data
+* Usage of constant buffers
+* Texture bindings
+* Different blend states and their complications (e.g. transparency)
 
 ### [03 - Loading Models](03_Mesh/Source/)
 
@@ -47,16 +52,27 @@ Used to explore constant buffers, different blend states.
 <img src="doc/images/03_model.png?raw=true" alt="Image of Subproject: 03-Mesh" height="320px">
 </p>
 
-We can now load models from files! 🎉    
-Also some further abstraction and refactoring of the render pipeline (Transforms, Shaders, Materials, Bindings,...)
+Explored topics:
+* Loading of models from files using Assimp
+* Revisited quaternions to calculate mesh transforms
+* Further abstractions of graphics resources (shaders, textures, buffers, materials,...)
 
 
+### [04 - Shader Reflection](04_ShaderReflection/Source/)
+
+<video src="https://user-images.githubusercontent.com/4201607/173398224-4324bcdb-3b06-40d1-afee-6ad67fac1632.mp4" controls="controls" height="320px"></video>
+
+Explored topics:
+* Setting up material parameters via shader reflection (input layouts, cbuffers, resource bindings,...)
+* Exposing an API to change material parameters during runtime
+* Rendering a simple UI with Imgui
 ## Dependencies
 
 * [Assimp](www.assimp.org)
 * [SDL2](https://www.libsdl.org/)
 * [STB](https://github.com/nothings/stb)
 * [Spdlog](https://github.com/gabime/spdlog)
+* [Dear ImGui](https://github.com/ocornut/imgui)
 
 ## Acknowledgments
 

@@ -67,6 +67,11 @@ Mesh::Mesh()
 {
 }
 
+Mesh::~Mesh()
+{
+    LOG("Destroy mesh");
+}
+
 void Mesh::Render(GraphicsContext& context)
 {
     CHECK(mesh_data_ != nullptr);
@@ -107,5 +112,5 @@ void Mesh::Update(float dt)
 {
     transform_.rotation_ *= Quat::FromAxisAngle(Vec3::UP, MathUtils::DegToRad(25.0f) * dt);
     transform_.rotation_.Normalize();
-    per_object_data_.w = transform_.ToMatrix().Transpose();
+    per_object_data_.mat_world = transform_.ToMatrix().Transpose();
 }

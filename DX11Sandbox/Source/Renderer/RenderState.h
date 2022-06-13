@@ -4,7 +4,7 @@
 
 struct GraphicsContext;
 
-enum BlendState : uint8
+enum class BlendState : uint8
 {
     BLEND_OPAQUE = 0,
     BLEND_PREMULTIPLIED_ALPHA,
@@ -38,7 +38,7 @@ inline bool operator==(const D3D11_BLEND_DESC& lhs, const D3D11_BLEND_DESC& rhs)
     return result;
 }
 
-enum RasterizerState : uint8
+enum class RasterizerState : uint8
 {
     WIREFRAME = 0,
     CULL_NONE,
@@ -63,7 +63,7 @@ inline bool operator==(const D3D11_RASTERIZER_DESC& lhs, const D3D11_RASTERIZER_
     return result;
 }
 
-enum SamplerState : uint8
+enum class SamplerState : uint8
 {
     POINT_CLAMP = 0,
     POINT_WRAP,
@@ -91,19 +91,32 @@ inline bool operator==(const D3D11_SAMPLER_DESC& lhs, const D3D11_SAMPLER_DESC& 
     return result;
 }
 
+enum class DepthStencilState : uint8
+{
+    DEFAULT
+};
+MAKE_HASHABLE(D3D11_DEPTH_STENCIL_DESC);
+
+inline bool operator==(const D3D11_DEPTH_STENCIL_DESC& lhs, const D3D11_DEPTH_STENCIL_DESC& rhs)
+{
+    bool result = memcmp(&lhs, &rhs, sizeof(D3D11_DEPTH_STENCIL_DESC)) == 0;
+    return result;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 class RenderStateCache
 {
 public:
-    RenderStateCache(SharedPtr<GraphicsContext> context);
+    RenderStateCache(GraphicsContext* context);
     ~RenderStateCache();
 
     ComPtr<ID3D11BlendState> GetBlendState(const D3D11_BLEND_DESC& desc);
     ComPtr<ID3D11BlendState> GetBlendState(BlendState state);
     ComPtr<ID3D11RasterizerState> GetRasterizerState(const D3D11_RASTERIZER_DESC& desc);
     ComPtr<ID3D11RasterizerState> GetRasterizerState(RasterizerState state);
-    ComPtr<ID3D11DepthStencilState> GetDepthStencilState();
+    ComPtr<ID3D11DepthStencilState> GetDepthStencilState(const D3D11_DEPTH_STENCIL_DESC& desc);
+    ComPtr<ID3D11DepthStencilState> GetDepthStencilState(DepthStencilState state);
     ComPtr<ID3D11SamplerState> GetSamplerState(const D3D11_SAMPLER_DESC& desc);
     ComPtr<ID3D11SamplerState> GetSamplerState(SamplerState state);
 
@@ -114,7 +127,7 @@ private:
     void InitCommonDepthStencilStates();
     void InitCommonSamplerStates();
 
-    SharedPtr<GraphicsContext> context_;
+    GraphicsContext* context_ = nullptr;
 
     std::unordered_map<BlendState, D3D11_BLEND_DESC> common_blend_state_descriptors_;
     std::unordered_map<D3D11_BLEND_DESC, ComPtr<ID3D11BlendState>> blend_state_cache_;
@@ -122,7 +135,8 @@ private:
     std::unordered_map<RasterizerState, D3D11_RASTERIZER_DESC> common_rasterizer_state_descriptors_;
     std::unordered_map<D3D11_RASTERIZER_DESC, ComPtr<ID3D11RasterizerState>> rasterizer_state_cache_;
 
-    ComPtr<ID3D11DepthStencilState> default_depth_stencil_state_;
+    std::unordered_map<DepthStencilState, D3D11_DEPTH_STENCIL_DESC> common_depth_stencil_state_descriptors_;
+    std::unordered_map<D3D11_DEPTH_STENCIL_DESC, ComPtr<ID3D11DepthStencilState>> depth_stencil_state_cache_;
 
     std::unordered_map<SamplerState, D3D11_SAMPLER_DESC> common_sampler_state_descriptors_;
     std::unordered_map<D3D11_SAMPLER_DESC, ComPtr<ID3D11SamplerState>> sampler_state_cache_;

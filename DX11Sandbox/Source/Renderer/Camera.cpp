@@ -3,6 +3,9 @@
 Camera::Camera(Vec3 pos, float aspect_ratio, float fov, float near_clip, float far_clip)
     : pos_(pos), aspect_ratio_(aspect_ratio), fov_(fov), near_clip_(near_clip), far_clip_(far_clip)
 {
+    Vec3 target = { 0.0f, 0.0f, 0.0f };
+    LookAt(target);
+    view_ = Mat4::LookAt(pos_, target, up_);
     UpdateMatrices();
 }
 
@@ -92,8 +95,6 @@ void Camera::UpdateProjection()
 void Camera::UpdateView()
 {
     // TODO: Maybe we want to automatically track a target at some point...?
-    /*Vec3 target = { 0.0f, 0.0f, 0.0f };
-    view_ = Mat4::LookAt(pos_, target, up_);*/
     is_view_dirty_ = false;
 }
 
