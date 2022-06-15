@@ -1,6 +1,10 @@
-#include "Application.h"
+#include "Core/Application.h"
 
 #include "SDL.h"
+
+#include "Engine/Input.h"
+#include "Renderer/GraphicsContext.h"
+#include "Renderer/IRenderer.h"
 
 void BaseApplication::Run()
 {
@@ -9,17 +13,14 @@ void BaseApplication::Run()
     Cleanup();
 }
 
-void BaseApplication::AddSystem(SharedPtr<ISystem>&& system)
-{
-    systems_.push_back(system);
-}
-
 void BaseApplication::Init()
 {
     LOG("Initializing application: {}", application_name_);
 
     SDL_Init(SDL_INIT_VIDEO);
     InitWindow();
+
+    gfx::Init(window_);
 }
 
 void BaseApplication::MainLoop()
@@ -29,13 +30,11 @@ void BaseApplication::MainLoop()
     while (window_->GetIsClosed() == false)
     {
         tick_timer_.Update();
-        double frame_time = tick_timer_.GetAccumulatedTime();
-
-        while(frame_time > 0.0)
+        while (tick_timer_.accumulated_time_ > 0.0)
         {
-            double delta_time = std::min(frame_time, TickTimer::TICK_TIME);
+            double delta_time = std::min(tick_timer_.accumulated_time_, TickTimer::TICK_TIME);
             Update(delta_time);
-            frame_time -= delta_time;
+            tick_timer_.accumulated_time_ -= delta_time;
         }
 
         Render();
@@ -45,14 +44,14 @@ void BaseApplication::MainLoop()
 void BaseApplication::Cleanup()
 {
     LOG("Tearing down application...");
-    systems_.clear();
+    gfx::Shutdown();
     DestroyWindow();
     SDL_Quit();
 }
 
 void BaseApplication::InitWindow()
 {
-    window_ = new Window(application_name_, 800, 600);
+    window_ = new Window(application_name_, 1024, 768);
     CHECK(window_ != nullptr);
 }
 
@@ -67,20 +66,19 @@ void BaseApplication::DestroyWindow()
 
 void BaseApplication::Update(double dt)
 {
+    input::ResetMousePosDelta();    // Have to manually reset, otherwise we only update on mouse moved event.
+
     SDL_Event sdl_event;
     while (SDL_PollEvent(&sdl_event))
     {
         HandleSDLEvent(sdl_event);
     }
-
-    for(SharedPtr<ISystem> system : systems_)
-    {
-        system->Update(dt);
-    }
 }
 
 void BaseApplication::HandleSDLEvent(const SDL_Event& sdl_event)
 {
+    input::HandleSDLEvent(sdl_event);
+
     if(window_ != nullptr)
     {
         window_->HandleSDLEvent(sdl_event);
@@ -89,4 +87,5 @@ void BaseApplication::HandleSDLEvent(const SDL_Event& sdl_event)
 
 void BaseApplication::Render()
 {
+    gfx::renderer->Render();
 }

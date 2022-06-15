@@ -1,21 +1,16 @@
 #include "Renderer/ConstantBuffer.h"
 
-#include "Renderer/GraphicsContext.h"
 #include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
 
-ConstantBuffer::ConstantBuffer(GraphicsContext* context, size_t size)
-    : context_(context), size_(size)
+ConstantBuffer::ConstantBuffer(size_t size)
+    : size_(size)
 {
     Init();
 }
 
-//ConstantBuffer::ConstantBuffer(SharedPtr<GraphicsContext> context)
-//    : context_(context)
-//{
-//}
-
-ConstantBuffer::ConstantBuffer(GraphicsContext* context, const CBufferBindingDesc& desc)
-    : context_(context), slot_(desc.slot), param_map_(desc.param_map)
+ConstantBuffer::ConstantBuffer(const CBufferBindingDesc& desc)
+    : slot_(desc.slot), param_map_(desc.param_map)
 {
     Init();
 }
@@ -31,7 +26,6 @@ ConstantBuffer::~ConstantBuffer()
 
 void ConstantBuffer::Init()
 {
-    CHECK(context_ != nullptr);
     if(param_map_.empty() == false)
     {
         CHECK(size_ == 0);
@@ -59,7 +53,7 @@ void ConstantBuffer::Init()
     buffer_desc.CPUAccessFlags = 0;
     buffer_desc.Usage = D3D11_USAGE_DEFAULT;   // Read / Write access
     buffer_desc.ByteWidth = static_cast<UINT>(size_);
-    DX11_VERIFY(context_->device->CreateBuffer(&buffer_desc, nullptr, &buffer_));
+    DX11_VERIFY(gfx::device->CreateBuffer(&buffer_desc, nullptr, &buffer_));
 }
 
 bool ConstantBuffer::SetFloat(const std::string& param_name, float val)
@@ -134,13 +128,12 @@ void ConstantBuffer::Upload(const uint8* data, size_t data_size)
 
 void ConstantBuffer::Upload()
 {
-    CHECK(context_ != nullptr);
     CHECK(buffer_ != nullptr);
     CHECK(data_ != nullptr);
 
     if(is_dirty_)
     {
-        context_->device_context->UpdateSubresource(buffer_.Get(), 0, nullptr, (void*) data_, 0, 0);
+        gfx::device_context->UpdateSubresource(buffer_.Get(), 0, nullptr, (void*) data_, 0, 0);
         is_dirty_ = false;
     }
 }

@@ -2,6 +2,12 @@
 #include <DirectXMath.h>
 #include <DirectXMathMatrix.inl>
 
+struct Vec2;
+struct Vec3;
+struct Vec4;
+struct Mat4;
+struct Quat;
+
 struct MathUtils
 {
     static float DegToRad(float value)
@@ -48,6 +54,9 @@ struct Vec2 : public DirectX::XMFLOAT2
         const XMVECTOR v2 = XMLoadFloat2(&v);
         return XMVector2NotEqual(v1, v2);
     }
+
+    static const Vec2 ZERO;
+    static const Vec2 ONE;
 };
 MAKE_HASHABLE(Vec2, t.x, t.y);
 
@@ -77,6 +86,67 @@ struct Vec3 : public DirectX::XMFLOAT3
         const XMVECTOR v2 = XMLoadFloat3(&v);
         return XMVector3NotEqual(v1, v2);
     }
+
+    inline Vec3& operator+=(const Vec3& v)
+    {
+        using namespace DirectX;
+        const XMVECTOR v1 = XMLoadFloat3(this);
+        const XMVECTOR v2 = XMLoadFloat3(&v);
+        const XMVECTOR result = XMVectorAdd(v1, v2);
+        XMStoreFloat3(this, result);
+        return *this;
+    }
+
+    inline Vec3& operator-=(const Vec3& v)
+    {
+        using namespace DirectX;
+        const XMVECTOR v1 = XMLoadFloat3(this);
+        const XMVECTOR v2 = XMLoadFloat3(&v);
+        const XMVECTOR result = XMVectorSubtract(v1, v2);
+        XMStoreFloat3(this, result);
+        return *this;
+    }
+
+    inline Vec3& operator*=(const Vec3& v) noexcept
+    {
+        using namespace DirectX;
+        const XMVECTOR v1 = XMLoadFloat3(this);
+        const XMVECTOR v2 = XMLoadFloat3(&v);
+        const XMVECTOR result = XMVectorMultiply(v1, v2);
+        XMStoreFloat3(this, result);
+        return *this;
+    }
+
+    inline Vec3& operator*=(float f) noexcept
+    {
+        using namespace DirectX;
+        const XMVECTOR v1 = XMLoadFloat3(this);
+        const XMVECTOR result = XMVectorScale(v1, f);
+        XMStoreFloat3(this, result);
+        return *this;
+    }
+
+    inline Vec3& operator/=(float f) noexcept
+    {
+        using namespace DirectX;
+        CHECK(f != 0.0f);
+        const XMVECTOR v1 = XMLoadFloat3(this);
+        const XMVECTOR result = XMVectorScale(v1, 1.0f / f);
+        XMStoreFloat3(this, result);
+        return *this;
+    }
+
+    Vec3 Cross(const Vec3& v) const;
+    float Dot(const Vec3& v) const;
+
+    float Length() const;
+    float LengthSquared() const;
+
+    static float Distance(const Vec3& v1, const Vec3& v2);
+    static float DistanceSquared(const Vec3& v1, const Vec3& v2);
+
+    static Vec3 Cross(const Vec3& v1, const Vec3& v2);
+    static Vec3 Transform(const Vec3& v, const Quat& q);
 
     static const Vec3 ZERO;
     static const Vec3 ONE;
@@ -115,6 +185,16 @@ struct Vec4 : public DirectX::XMFLOAT4
         const XMVECTOR v2 = XMLoadFloat4(&v);
         return XMVector4NotEqual(v1, v2);
     }
+
+    inline Vec4& operator+=(const Vec4& v)
+    {
+        using namespace DirectX;
+        const XMVECTOR v1 = XMLoadFloat4(this);
+        const XMVECTOR v2 = XMLoadFloat4(&v);
+        const XMVECTOR result = XMVectorAdd(v1, v2);
+        XMStoreFloat4(this, result);
+        return *this;
+    }
 };
 MAKE_HASHABLE(Vec4, t.x, t.y, t.z, t.w);
 
@@ -136,9 +216,20 @@ struct Mat4 : public DirectX::XMFLOAT4X4
     Mat4(const DirectX::XMFLOAT4X4& other) { memcpy(this, &other, sizeof(DirectX::XMFLOAT4X4)); }
     Mat4(const DirectX::XMMATRIX& other) { DirectX::XMStoreFloat4x4(this, other); }
 
+    Mat4(const Mat4&) = default;
+    Mat4& operator=(const Mat4&) = default;
+
+    Mat4(Mat4&&) = default;
+    Mat4& operator=(Mat4&&) = default;
+
+    Mat4& operator*= (const Mat4& other);
+
     operator DirectX::XMMATRIX() const { return DirectX::XMLoadFloat4x4(this); }
 
+    void Decompose(Vec3& out_scaling, Quat& out_rotation, Vec3& out_translation) const;
+
     Mat4 Transpose() const;
+    Mat4 Invert() const;
 
     static Mat4 Translation(const Vec3& v);
     static Mat4 Translation(float x, float y, float z);
@@ -148,14 +239,13 @@ struct Mat4 : public DirectX::XMFLOAT4X4
     static Mat4 Scaling(float s);
     static Mat4 Scaling(const Vec3& v);
     static Mat4 Scaling(float x, float y, float z);
+    static Mat4 SRT(const Vec3& scaling, const Quat& rotation, const Vec3& translation);
 
     static Mat4 LookAt(const Vec3& origin, const Vec3& target, const Vec3& up);
     static Mat4 PerspectiveFovLH(float fov_y_rad, float aspect_ratio, float near_z, float far_z);
 
     static const Mat4 IDENTITY;
 };
-
-Mat4 operator*(const Mat4& mat_a, const Mat4& mat_b);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -239,6 +329,8 @@ struct Quat : public DirectX::XMFLOAT4
 
     Mat4 ToMatrix() const;
 
+    static Quat Normalize(const Quat& q);
+
     static Quat FromAxisAngle(const Vec3& axis, float angle);
     static Quat FromPitchYawRoll(float pitch, float yaw, float roll);
     static Quat FromPitchYawRoll(const Vec3& v);
@@ -289,3 +381,6 @@ inline Quat operator/ (const Quat& a, const Quat& b)
     XMStoreFloat4(&out, XMQuaternionMultiply(q1, q2));
     return out;
 }
+
+Vec3 operator*(const Vec3& v, const Mat4& m);
+Mat4 operator*(const Mat4& mat_a, const Mat4& mat_b);

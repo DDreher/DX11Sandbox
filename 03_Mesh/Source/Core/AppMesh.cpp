@@ -10,12 +10,10 @@ AppMesh::AppMesh()
 void AppMesh::Init()
 {
     BaseApplication::Init();
-    renderer_ = MakeUnique<Renderer>(window_);
 }
 
 void AppMesh::Cleanup()
 {
-    renderer_.reset();
     BaseApplication::Cleanup();
 }
 
@@ -27,5 +25,4 @@ void AppMesh::Update(double dt)
 void AppMesh::Render()
 {
     BaseApplication::Render();
-    renderer_->Render();
 }

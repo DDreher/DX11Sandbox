@@ -22,5 +22,10 @@ struct PSInput
 float4 Main(PSInput input) : SV_TARGET
 {
     float4 color = tex.Sample(sampler_linear_wrap, input.uv);
+
+#ifdef ALPHA_CUTOFF
+    clip(color.a < .5f ? -1.0f : 1.0f);
+#endif
+
     return color;
 }

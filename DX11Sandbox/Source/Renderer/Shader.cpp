@@ -1,11 +1,13 @@
 #pragma comment(lib, "dxguid.lib")
 
-#include "Shader.h"
+#include "Renderer/Shader.h"
 
 #include <d3dcompiler.h>
 
 #include "Core/FileIO.h"
 #include "Renderer/ConstantBuffer.h"
+#include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
 
 namespace
 {
@@ -73,7 +75,7 @@ namespace
 }
 
 
-HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const char* entry_point,
+HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const std::vector<ShaderMacro>& defines, const char* entry_point,
     const char* shader_target, ComPtr<ID3DBlob>& out_shader_blob)
 {
     CHECK(shader_bytes.size() > 0);
@@ -84,13 +86,28 @@ HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector
     compile_flags |= D3DCOMPILE_DEBUG;
 #endif
 
+    std::vector<D3D_SHADER_MACRO> shader_macros;
+    for (const auto& d : defines)
+    {
+        shader_macros.push_back({
+            .Name = d.name.c_str(),
+            .Definition = d.value.c_str()
+        });
+    }
+
+    constexpr size_t NUM_DEFAULT_DEFINES = 1;
+    static const std::array<D3D_SHADER_MACRO, NUM_DEFAULT_DEFINES> DEFAULT_DEFINES = {
+        { nullptr, nullptr }
+    };
+    shader_macros.insert(shader_macros.end(), DEFAULT_DEFINES.begin(), DEFAULT_DEFINES.end());
+
     ComPtr<ID3DBlob> error_blob = nullptr;
     HRESULT result = D3DCompile
     (
         shader_bytes.data(),    // src to compile
         shader_bytes.size(),    // src size
         asset_path.c_str(),                // src name
-        nullptr,                // defines
+        shader_macros.data(),
         D3D_COMPILE_STANDARD_FILE_INCLUDE,                // includes
         entry_point,
         shader_target,
@@ -112,13 +129,11 @@ HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector
 
 //////////////////////////////////////////////////////////////////////////
 
-ShaderBase::ShaderBase(GraphicsContext* context, const std::string& asset_path, EShaderType shader_type)
-    : context_(context),
-    shader_type_(shader_type)
+ShaderBase::ShaderBase(const std::string& asset_path, EShaderType shader_type, const std::vector<ShaderMacro>& defines)
+    : asset_path_(asset_path), shader_type_(shader_type), defines_(defines)
 {
-    CHECK(context != nullptr);
     LoadFromFile(asset_path);
-    Compile(*context_, shader_code_);
+    Compile(shader_code_);
 }
 
 ShaderBase::~ShaderBase()
@@ -134,23 +149,21 @@ bool ShaderBase::LoadFromFile(const std::string asset_path)
     return true;
 }
 
-bool ShaderBase::Compile(const GraphicsContext& context, const std::vector<char>& bytes)
+bool ShaderBase::Compile(const std::vector<char>& bytes)
 {
     LOG("Compiling shader: {}", asset_path_);
+    bool did_succeed = false;
 
     const auto it = ::SHADER_TARGET_MAP.find(shader_type_);
     if(it != ::SHADER_TARGET_MAP.end())
     {
-        if(SUCCEEDED(ShaderCompiler::Compile(asset_path_, bytes, ::ENTRYPOINT, it->second, shader_blob_)))
-        {
-            return true;
-        }
+        did_succeed = SUCCEEDED(ShaderCompiler::Compile(asset_path_, bytes, defines_, ::ENTRYPOINT, it->second, shader_blob_));
     }
 
-    return false;
+    return did_succeed;
 }
 
-void ShaderBase::Reflect(GraphicsContext& context)
+void ShaderBase::Reflect()
 {
     CHECK(shader_blob_ != nullptr);
     DX11_VERIFY(D3DReflect(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), IID_ID3D11ShaderReflection, &shader_reflection_));
@@ -159,7 +172,7 @@ void ShaderBase::Reflect(GraphicsContext& context)
     for (size_t i = 0; i < shader_desc_.BoundResources; i++)
     {
         D3D11_SHADER_INPUT_BIND_DESC binding_desc;
-        shader_reflection_->GetResourceBindingDesc(static_cast<UINT>(i), &binding_desc);
+        shader_reflection_->GetResourceBindingDesc(static_cast<uint32>(i), &binding_desc);
 
         if(binding_desc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
         {
@@ -267,39 +280,33 @@ void ShaderBase::Reflect(GraphicsContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-VertexShader::VertexShader(GraphicsContext* context, const std::string& asset_path)
-    : ShaderBase(context, asset_path, EShaderType::VS)
+VertexShader::VertexShader(const VertexShaderDesc& desc)
+    : ShaderBase(desc.path, EShaderType::VS, desc.defines)
 {
-    Create(*context_);
-    Reflect(*context_);
-}
-
-void VertexShader::Create(GraphicsContext& context)
-{
-    CHECK(context.device != nullptr);
     CHECK(shader_blob_ != nullptr);
     CHECK(native_ptr_ == nullptr);
-    DX11_VERIFY(context.device->CreateVertexShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    DX11_VERIFY(gfx::device->CreateVertexShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    SetDebugName(native_ptr_.Get(), asset_path_.c_str());
+
+    Reflect();
 }
 
-void VertexShader::Bind(GraphicsContext& context)
+void VertexShader::Bind()
 {
-    CHECK(context.device != nullptr);
-    
     CHECK(input_layout_ != nullptr);
-    context.device_context->IASetInputLayout(input_layout_.Get());
+    gfx::SetInputLayout(input_layout_.Get());
 
     CHECK(native_ptr_ != nullptr);
-    context.device_context->VSSetShader(native_ptr_.Get(), nullptr, 0);
+    gfx::SetVertexShader(native_ptr_.Get());
 }
 
-void VertexShader::Reflect(GraphicsContext& context)
+void VertexShader::Reflect()
 {
-    ShaderBase::Reflect(context);
-    CreateInputLayoutFromReflection(context);
+    ShaderBase::Reflect();
+    CreateInputLayoutFromReflection();
 }
 
-void VertexShader::CreateInputLayoutFromReflection(const GraphicsContext& context)
+void VertexShader::CreateInputLayoutFromReflection()
 {
     CHECK(shader_reflection_ != nullptr);
 
@@ -320,32 +327,25 @@ void VertexShader::CreateInputLayoutFromReflection(const GraphicsContext& contex
         layout_desc.push_back(element_desc);
     }
 
-    DX11_VERIFY(context.device->CreateInputLayout(layout_desc.data(), static_cast<UINT>(layout_desc.size()),
+    DX11_VERIFY(gfx::device->CreateInputLayout(layout_desc.data(), static_cast<UINT>(layout_desc.size()),
         shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), &input_layout_));
+    SetDebugName(input_layout_.Get(), asset_path_.c_str());
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 
-PixelShader::PixelShader(GraphicsContext* context, const std::string& asset_path)
-    : ShaderBase(context, asset_path, EShaderType::PS)
+PixelShader::PixelShader(const PixelShaderDesc& desc)
+    : ShaderBase(desc.path, EShaderType::PS, desc.defines)
 {
-    Create(*context_);
-    Reflect(*context_);
-}
-
-void PixelShader::Create(GraphicsContext& context)
-{
-    CHECK(context.device != nullptr);
     CHECK(shader_blob_ != nullptr);
     CHECK(native_ptr_ == nullptr);
-    DX11_VERIFY(context.device->CreatePixelShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    DX11_VERIFY(gfx::device->CreatePixelShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    SetDebugName(native_ptr_.Get(), asset_path_.c_str());
+    Reflect();
 }
 
-void PixelShader::Bind(GraphicsContext& context)
+void PixelShader::Bind()
 {
-    CHECK(context.device != nullptr);
     CHECK(native_ptr_ != nullptr);
-
-    context.device_context->PSSetShader(native_ptr_.Get(), nullptr, 0);
+    gfx::SetPixelShader(native_ptr_.Get());
 }

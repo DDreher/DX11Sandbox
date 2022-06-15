@@ -11,29 +11,11 @@
 
 #include "Core/Window.h"
 #include "Renderer/GraphicsContext.h"
+#include "Renderer/IRenderer.h"
 
 using namespace DirectX;
 
-struct VertexPosColor
-{
-    Vec3 pos;
-    Vec3 color;
-
-    bool operator==(VertexPosColor const& other) const
-    {
-        return pos == other.pos && color == other.color;
-    }
-
-    static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
-    {
-        { "POSITION", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-    };
-
-    static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
-};
-
-struct VertexShader
+struct SimpleVertexShader
 {
     void LoadFromHlsl(ID3D11Device* const device, const std::string& path);
 
@@ -41,21 +23,20 @@ struct VertexShader
     ComPtr<ID3D11InputLayout> input_layout = nullptr; // Describes order and type of input data
 };
 
-struct PixelShader
+struct SimplePixelShader
 {
     void LoadFromHlsl(ID3D11Device* const device, const std::string& path);
     ComPtr<ID3D11PixelShader> ps = nullptr;
 };
 
-class Renderer
+class Renderer : public IRenderer
 {
 public:
-    Renderer(Window* window);
+    Renderer();
     Renderer(const Renderer&) = delete;                 // <-- No copy!
     Renderer& operator=(const Renderer&) = delete;      // <-/
-    ~Renderer() = default;
 
-    void Render();
+    virtual void Render() override;
 
 private:
     ID3D11VertexShader* CreateVertexShader(const std::string& path);
@@ -67,10 +48,10 @@ private:
     template<>
     ID3D11VertexShader* CreateShader<ID3D11VertexShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(graphics_context_.device != nullptr);
+        CHECK(gfx::device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11VertexShader* shader = nullptr;
-        graphics_context_.device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        gfx::device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
@@ -79,16 +60,14 @@ private:
     template<>
     ID3D11PixelShader* CreateShader<ID3D11PixelShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(graphics_context_.device != nullptr);
+        CHECK(gfx::device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11PixelShader* shader = nullptr;
-        graphics_context_.device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        gfx::device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
     }
-
-    GraphicsContext graphics_context_;
 
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
 
@@ -100,8 +79,8 @@ private:
     ComPtr<ID3D11Buffer> index_buffer_ = nullptr;
 
     // Shaders
-    VertexShader vertex_shader_;
-    PixelShader pixel_shader_;
+    SimpleVertexShader vertex_shader_;
+    SimplePixelShader pixel_shader_;
 
     // Shader Resources
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr; // AKA Uniform Buffers in OpenGL land
@@ -122,3 +101,5 @@ private:
         0, 1, 2,
     };
 };
+
+IRenderer* CreateRenderer();

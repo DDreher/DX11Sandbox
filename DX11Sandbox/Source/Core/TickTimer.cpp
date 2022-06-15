@@ -13,8 +13,8 @@ void TickTimer::Update()
     const double elapsed = duration.count();
 
     prev_ = current_;
-    time_accumulator_ += elapsed;
+    accumulated_time_ += elapsed;
 
     // Cap so we don't get weird artifacts when debugging
-    time_accumulator_ = std::min(time_accumulator_, TICK_TIME * MAX_TICKS_PER_FRAME);
+    accumulated_time_ = std::min(accumulated_time_, TICK_TIME * MAX_TICKS_PER_FRAME);
 }
