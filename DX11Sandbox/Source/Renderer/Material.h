@@ -1,4 +1,5 @@
 #pragma once
+#include "Core/Handle.h"
 #include "Renderer/Bindable.h"
 #include "Renderer/ConstantBuffer.h"
 #include "Renderer/GraphicsContext.h"
@@ -9,7 +10,7 @@ struct TextureParameter
 {
     std::string name;
     uint32 slot = 0;
-    SharedPtr<Texture> tex;
+    Handle<Texture> tex;
 };
 
 struct MaterialDesc
@@ -31,7 +32,7 @@ public:
 
     void Create(GraphicsContext* context);
 
-    void SetTexture(const std::string& param_name, SharedPtr<Texture> texture);
+    void SetTexture(const std::string& param_name, Handle<Texture> texture);
     void SetParam(const std::string& param_name, Vec3 val);
     void SetParam(const std::string& param_name, Vec4 val);
     void SetParam(const std::string& param_name, float val);

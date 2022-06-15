@@ -3,22 +3,21 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
-#include "DX11Util.h"
+#include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
 
-SharedPtr<Texture> Texture::LoadFromFile(const GraphicsContext& context, const std::string& asset_path)
+void Texture::LoadFromFile(const GraphicsContext* context, const std::string& asset_path)
 {
-    SharedPtr<Texture> tex = MakeShared<Texture>();
-
-    tex->file_path_ = asset_path;
-    stbi_uc* tex_data = stbi_load(tex->file_path_.c_str(), &tex->width_, &tex->height_, &tex->num_channels_, STBI_rgb_alpha);
-    tex->Create(context, (void*)tex_data);
+    file_path_ = asset_path;
+    stbi_uc* tex_data = stbi_load(file_path_.c_str(), &width_, &height_, &num_channels_, STBI_rgb_alpha);
+    Create(context, (void*)tex_data);
     stbi_image_free(tex_data);
-
-    return tex;
 }
 
-void Texture::Create(const GraphicsContext& context, void* data)
+void Texture::Create(const GraphicsContext* context, void* data)
 {
+    CHECK(context != nullptr);
+
     D3D11_TEXTURE2D_DESC texture_desc = {};
     texture_desc.Width = width_;
     texture_desc.Height = height_;
@@ -34,6 +33,6 @@ void Texture::Create(const GraphicsContext& context, void* data)
     D3D11_SUBRESOURCE_DATA texture_subresource_data = {};
     texture_subresource_data.pSysMem = data;
     texture_subresource_data.SysMemPitch = width_ * 4 * sizeof(uint8);;
-    DX11_VERIFY(context.device->CreateTexture2D(&texture_desc, &texture_subresource_data, &handle_));
-    DX11_VERIFY(context.device->CreateShaderResourceView(handle_.Get(), nullptr, &srv_));
+    DX11_VERIFY(context->device->CreateTexture2D(&texture_desc, &texture_subresource_data, &handle_));
+    DX11_VERIFY(context->device->CreateShaderResourceView(handle_.Get(), nullptr, &srv_));
 }

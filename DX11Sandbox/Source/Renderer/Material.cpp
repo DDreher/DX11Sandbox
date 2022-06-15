@@ -28,8 +28,10 @@ void Material::Bind(GraphicsContext& context)
 
     for(const auto& [key, val] : texture_parameters_)
     {
-        context.device_context->VSSetShaderResources(val.slot, 1 /*num views*/, val.tex->srv_.GetAddressOf());
-        context.device_context->PSSetShaderResources(val.slot, 1 /*num views*/, val.tex->srv_.GetAddressOf());
+        Texture* tex = context.resource_manager.Get(val.tex);
+        CHECK(tex != nullptr);
+        context.device_context->VSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
+        context.device_context->PSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
     }
 
     context.device_context->OMSetBlendState(context.render_state_cache->GetBlendState(blend_state_).Get(), nullptr, 0xffffffff);
@@ -86,10 +88,8 @@ void Material::Create(GraphicsContext* context)
     }
 }
 
-void Material::SetTexture(const std::string& param_name, SharedPtr<Texture> texture)
+void Material::SetTexture(const std::string& param_name, Handle<Texture> texture)
 {
-    CHECK(texture != nullptr);
-
     auto it = texture_parameters_.find(param_name);
     if(it != texture_parameters_.end())
     {

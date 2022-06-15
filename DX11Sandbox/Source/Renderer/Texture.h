@@ -1,11 +1,16 @@
 #pragma once
-#include "GraphicsContext.h"
+#include "Renderer/RenderState.h"
+
+struct GraphicsContext;
 
 class Texture
 {
 public:
-    static SharedPtr<Texture> LoadFromFile(const GraphicsContext& context, const std::string& asset_path);
-    void Create(const GraphicsContext& context, void* data);
+    Texture() = default;
+    ~Texture() = default;
+
+    void LoadFromFile(const GraphicsContext* context, const std::string& asset_path);
+    void Create(const GraphicsContext* context, void* data);
 
     std::string file_path_;
     int32 num_channels_ = -1;

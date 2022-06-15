@@ -1,10 +1,10 @@
 #pragma once
 #include <d3d11.h>
 
-#include "DX11Types.h"
-#include "DX11Util.h"
-
-#include "RenderState.h"
+#include "Renderer/DX11Types.h"
+#include "Renderer/DX11Util.h"
+#include "Renderer/RenderState.h"
+#include "Renderer/ResourceManager.h"
 
 struct GraphicsContext
 {
@@ -12,6 +12,7 @@ struct GraphicsContext
     ComPtr<ID3D11DeviceContext> device_context = nullptr; // Used to configure the rendering pipeline and draw geometry
     ComPtr<IDXGISwapChain> swapchain = nullptr;
     UniquePtr<RenderStateCache> render_state_cache;
+    ResourceManager resource_manager;
 
     ~GraphicsContext()
     {
