@@ -28,9 +28,9 @@ public:
     Material(const MaterialDesc& desc);
     ~Material();
 
-    virtual void Bind(GraphicsContext& context) override;
+    virtual void Bind() override;
 
-    void Create(GraphicsContext* context);
+    void Create();
 
     void SetTexture(const std::string& param_name, Handle<Texture> texture);
     void SetParam(const std::string& param_name, Vec3 val);

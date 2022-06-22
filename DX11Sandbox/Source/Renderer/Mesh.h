@@ -9,9 +9,9 @@
 
 struct MeshData : public IBindable
 {
-    virtual void Bind(GraphicsContext& context) override;
+    virtual void Bind() override;
 
-    static SharedPtr<MeshData> LoadFromFile(const GraphicsContext& context, const std::string& asset_path);
+    static SharedPtr<MeshData> LoadFromFile(const std::string& asset_path);
     
     SharedPtr<IndexBuffer> index_buffer;
     SharedPtr<VertexBuffer> pos;
@@ -21,7 +21,7 @@ struct MeshData : public IBindable
 
 struct CubeMeshData : public MeshData
 {
-    CubeMeshData(GraphicsContext& context)
+    CubeMeshData()
     {
         std::vector<uint16> vertex_indices = {
             // front
@@ -148,10 +148,10 @@ struct CubeMeshData : public MeshData
             Vec2(1.0f, 1.0f)
         };
 
-        index_buffer = MakeShared<IndexBuffer>(context, vertex_indices.data(), (uint32)vertex_indices.size());
-        pos = MakeShared<VertexBuffer>(context, vertex_pos.data(), (uint32)vertex_pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
-        normals = MakeShared<VertexBuffer>(context, vertex_normals.data(), (uint32)vertex_normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
-        uv = MakeShared<VertexBuffer>(context, vertex_uv.data(), (uint32)vertex_uv.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
+        index_buffer = MakeShared<IndexBuffer>(vertex_indices.data(), (uint32)vertex_indices.size());
+        pos = MakeShared<VertexBuffer>(vertex_pos.data(), (uint32)vertex_pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
+        normals = MakeShared<VertexBuffer>(vertex_normals.data(), (uint32)vertex_normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
+        uv = MakeShared<VertexBuffer>(vertex_uv.data(), (uint32)vertex_uv.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
     }
 };
 
@@ -161,9 +161,9 @@ struct Mesh : public IBindable
     ~Mesh();
 
     void Update(float dt);
-    void Render(GraphicsContext& context);
+    void Render();
 
-    virtual void Bind(GraphicsContext& context) override;
+    virtual void Bind() override;
 
     float rotation_angle_ = 0.0f;
     Transform transform_;
@@ -174,8 +174,3 @@ struct Mesh : public IBindable
     CBufferPerObject per_object_data_;
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr;
 };
-
-//struct Model
-//{
-//    std::vector<Mesh> 
-//};

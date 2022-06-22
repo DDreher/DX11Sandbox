@@ -4,7 +4,7 @@
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 
-SharedPtr<MeshData> MeshData::LoadFromFile(const GraphicsContext& context, const std::string& asset_path)
+SharedPtr<MeshData> MeshData::LoadFromFile(const std::string& asset_path)
 {
     LOG("Loading mesh: {}", asset_path);
 
@@ -48,19 +48,19 @@ SharedPtr<MeshData> MeshData::LoadFromFile(const GraphicsContext& context, const
         }
     }
 
-    mesh_data->pos = MakeShared<VertexBuffer>(context, pos.data(), (uint32)pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
-    mesh_data->normals = MakeShared<VertexBuffer>(context, normals.data(), (uint32)normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
-    mesh_data->uv = MakeShared<VertexBuffer>(context, uvs.data(), (uint32)uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
-    mesh_data->index_buffer = MakeShared<IndexBuffer>(context, indices.data(), (uint32)indices.size());
+    mesh_data->pos = MakeShared<VertexBuffer>(pos.data(), (uint32)pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
+    mesh_data->normals = MakeShared<VertexBuffer>(normals.data(), (uint32)normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
+    mesh_data->uv = MakeShared<VertexBuffer>(uvs.data(), (uint32)uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
+    mesh_data->index_buffer = MakeShared<IndexBuffer>(indices.data(), (uint32)indices.size());
     return mesh_data;
 }
 
-void MeshData::Bind(GraphicsContext& context)
+void MeshData::Bind()
 {
-    index_buffer->Bind(context);
-    pos->Bind(context);
-    uv->Bind(context);
-    normals->Bind(context);
+    index_buffer->Bind();
+    pos->Bind();
+    uv->Bind();
+    normals->Bind();
 }
 
 Mesh::Mesh()
@@ -72,24 +72,24 @@ Mesh::~Mesh()
     LOG("Destroy mesh");
 }
 
-void Mesh::Render(GraphicsContext& context)
+void Mesh::Render()
 {
     CHECK(mesh_data_ != nullptr);
     CHECK(material_ != nullptr);
 
-    Bind(context);
-    context.device_context->DrawIndexed(mesh_data_->index_buffer->GetNum(), 0 /*start idx*/, 0 /*idx offset*/);
+    Bind();
+    gfx::device_context->DrawIndexed(mesh_data_->index_buffer->GetNum(), 0 /*start idx*/, 0 /*idx offset*/);
 }
 
-void Mesh::Bind(GraphicsContext& context)
+void Mesh::Bind()
 {
-    context.device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    gfx::device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     CHECK(material_!= nullptr);
-    material_->Bind(context);
+    material_->Bind();
 
     CHECK(mesh_data_ != nullptr);
-    mesh_data_->Bind(context);
+    mesh_data_->Bind();
 
     if(cbuffer_per_object_ == nullptr)
     {
@@ -98,14 +98,14 @@ void Mesh::Bind(GraphicsContext& context)
         cbuffer_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
         cbuffer_desc.ByteWidth = sizeof(CBufferPerObject);
         cbuffer_desc.CPUAccessFlags = 0;
-        DX11_VERIFY(context.device->CreateBuffer(&cbuffer_desc, nullptr, &cbuffer_per_object_));
+        DX11_VERIFY(gfx::device->CreateBuffer(&cbuffer_desc, nullptr, &cbuffer_per_object_));
     }
 
-    context.device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
+    gfx::device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
 
     static constexpr int CBUFFER_PER_OBJECT_SLOT = 1;
-    context.device_context->VSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
-    context.device_context->PSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
+    gfx::device_context->VSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
+    gfx::device_context->PSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
 }
 
 void Mesh::Update(float dt)

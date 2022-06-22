@@ -3,12 +3,10 @@
 #include "Core/Pool.h"
 #include "Renderer/Texture.h"
 
-struct GraphicsContext;
-
 class ResourceManager
 {
 public:
-    Handle<Texture> CreateTexture(GraphicsContext* context, const char* path);
+    Handle<Texture> CreateTexture(const char* path);
     Texture* Get(Handle<Texture> handle);
     void Destroy(Handle<Texture> handle);
 

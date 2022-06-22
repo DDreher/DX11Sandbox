@@ -3,8 +3,6 @@
 
 #include "Renderer/DX11Types.h"
 
-struct GraphicsContext;
-
 enum class ParameterType
 {
     Float = 0,
@@ -52,8 +50,8 @@ MAKE_HASHABLE(CBufferBindingDesc, t.name, t.slot);
 class ConstantBuffer
 {
 public:
-    ConstantBuffer(GraphicsContext* context, size_t size);
-    ConstantBuffer(GraphicsContext* context, const CBufferBindingDesc& desc);
+    ConstantBuffer(size_t size);
+    ConstantBuffer(const CBufferBindingDesc& desc);
     ~ConstantBuffer();
 
     void Init();
@@ -72,7 +70,6 @@ public:
 
     std::unordered_map<std::string, CBufferParam> param_map_;
 
-    GraphicsContext* context_;
     size_t size_ = 0;
     uint8* data_ = nullptr;
     uint32 slot_ = 0;

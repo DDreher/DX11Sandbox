@@ -1,16 +1,14 @@
 #pragma once
 #include "Renderer/RenderState.h"
 
-struct GraphicsContext;
-
 class Texture
 {
 public:
     Texture() = default;
     ~Texture() = default;
 
-    void LoadFromFile(const GraphicsContext* context, const std::string& asset_path);
-    void Create(const GraphicsContext* context, void* data);
+    void LoadFromFile(const std::string& asset_path);
+    void Create(void* data);
 
     std::string file_path_;
     int32 num_channels_ = -1;

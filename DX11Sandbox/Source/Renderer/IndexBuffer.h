@@ -1,14 +1,13 @@
 #pragma once
 #include "Bindable.h"
 #include "DX11Types.h"
-#include "GraphicsContext.h"
 
 class IndexBuffer : public IBindable
 {
 public:
-    IndexBuffer(const GraphicsContext& context, uint16* indices, uint32 num_indices);
+    IndexBuffer(uint16* indices, uint32 num_indices);
 
-    void Bind(GraphicsContext& context) override;
+    void Bind() override;
 
     inline uint32 GetNum() { return num_; };
 

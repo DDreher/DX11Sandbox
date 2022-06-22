@@ -2,8 +2,6 @@
 #include <d3d11.h>
 #include "DX11Types.h"
 
-struct GraphicsContext;
-
 enum class BlendState : uint8
 {
     BLEND_OPAQUE = 0,
@@ -108,7 +106,7 @@ inline bool operator==(const D3D11_DEPTH_STENCIL_DESC& lhs, const D3D11_DEPTH_ST
 class RenderStateCache
 {
 public:
-    RenderStateCache(GraphicsContext* context);
+    RenderStateCache();
     ~RenderStateCache();
 
     ComPtr<ID3D11BlendState> GetBlendState(const D3D11_BLEND_DESC& desc);
@@ -126,8 +124,6 @@ private:
     void InitCommonRasterizerStates();
     void InitCommonDepthStencilStates();
     void InitCommonSamplerStates();
-
-    GraphicsContext* context_ = nullptr;
 
     std::unordered_map<BlendState, D3D11_BLEND_DESC> common_blend_state_descriptors_;
     std::unordered_map<D3D11_BLEND_DESC, ComPtr<ID3D11BlendState>> blend_state_cache_;

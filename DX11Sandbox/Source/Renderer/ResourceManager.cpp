@@ -1,11 +1,10 @@
-#include "Renderer/GraphicsContext.h"
 #include "Renderer/ResourceManager.h"
 
-Handle<Texture> ResourceManager::CreateTexture(GraphicsContext* context, const char* path)
+Handle<Texture> ResourceManager::CreateTexture(const char* path)
 {
     Handle<Texture> out_handle = texture_pool_.Create();
     Texture* tex = texture_pool_.Get(out_handle);
-    tex->LoadFromFile(context, path);
+    tex->LoadFromFile(path);
     return out_handle;
 }
 

@@ -112,13 +112,11 @@ HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector
 
 //////////////////////////////////////////////////////////////////////////
 
-ShaderBase::ShaderBase(GraphicsContext* context, const std::string& asset_path, EShaderType shader_type)
-    : context_(context),
-    shader_type_(shader_type)
+ShaderBase::ShaderBase(const std::string& asset_path, EShaderType shader_type)
+    : shader_type_(shader_type)
 {
-    CHECK(context != nullptr);
     LoadFromFile(asset_path);
-    Compile(*context_, shader_code_);
+    Compile(shader_code_);
 }
 
 ShaderBase::~ShaderBase()
@@ -134,7 +132,7 @@ bool ShaderBase::LoadFromFile(const std::string asset_path)
     return true;
 }
 
-bool ShaderBase::Compile(const GraphicsContext& context, const std::vector<char>& bytes)
+bool ShaderBase::Compile(const std::vector<char>& bytes)
 {
     LOG("Compiling shader: {}", asset_path_);
 
@@ -150,7 +148,7 @@ bool ShaderBase::Compile(const GraphicsContext& context, const std::vector<char>
     return false;
 }
 
-void ShaderBase::Reflect(GraphicsContext& context)
+void ShaderBase::Reflect()
 {
     CHECK(shader_blob_ != nullptr);
     DX11_VERIFY(D3DReflect(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), IID_ID3D11ShaderReflection, &shader_reflection_));
@@ -267,39 +265,36 @@ void ShaderBase::Reflect(GraphicsContext& context)
 
 //////////////////////////////////////////////////////////////////////////
 
-VertexShader::VertexShader(GraphicsContext* context, const std::string& asset_path)
-    : ShaderBase(context, asset_path, EShaderType::VS)
+VertexShader::VertexShader(const std::string& asset_path)
+    : ShaderBase(asset_path, EShaderType::VS)
 {
-    Create(*context_);
-    Reflect(*context_);
+    Create();
+    Reflect();
 }
 
-void VertexShader::Create(GraphicsContext& context)
+void VertexShader::Create()
 {
-    CHECK(context.device != nullptr);
     CHECK(shader_blob_ != nullptr);
     CHECK(native_ptr_ == nullptr);
-    DX11_VERIFY(context.device->CreateVertexShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    DX11_VERIFY(gfx::device->CreateVertexShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
 }
 
-void VertexShader::Bind(GraphicsContext& context)
+void VertexShader::Bind()
 {
-    CHECK(context.device != nullptr);
-    
     CHECK(input_layout_ != nullptr);
-    context.device_context->IASetInputLayout(input_layout_.Get());
+    gfx::device_context->IASetInputLayout(input_layout_.Get());
 
     CHECK(native_ptr_ != nullptr);
-    context.device_context->VSSetShader(native_ptr_.Get(), nullptr, 0);
+    gfx::device_context->VSSetShader(native_ptr_.Get(), nullptr, 0);
 }
 
-void VertexShader::Reflect(GraphicsContext& context)
+void VertexShader::Reflect()
 {
-    ShaderBase::Reflect(context);
-    CreateInputLayoutFromReflection(context);
+    ShaderBase::Reflect();
+    CreateInputLayoutFromReflection();
 }
 
-void VertexShader::CreateInputLayoutFromReflection(const GraphicsContext& context)
+void VertexShader::CreateInputLayoutFromReflection()
 {
     CHECK(shader_reflection_ != nullptr);
 
@@ -320,32 +315,30 @@ void VertexShader::CreateInputLayoutFromReflection(const GraphicsContext& contex
         layout_desc.push_back(element_desc);
     }
 
-    DX11_VERIFY(context.device->CreateInputLayout(layout_desc.data(), static_cast<UINT>(layout_desc.size()),
+    DX11_VERIFY(gfx::device->CreateInputLayout(layout_desc.data(), static_cast<UINT>(layout_desc.size()),
         shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), &input_layout_));
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 
-PixelShader::PixelShader(GraphicsContext* context, const std::string& asset_path)
-    : ShaderBase(context, asset_path, EShaderType::PS)
+PixelShader::PixelShader(const std::string& asset_path)
+    : ShaderBase(asset_path, EShaderType::PS)
 {
-    Create(*context_);
-    Reflect(*context_);
+    Create();
+    Reflect();
 }
 
-void PixelShader::Create(GraphicsContext& context)
+void PixelShader::Create()
 {
-    CHECK(context.device != nullptr);
     CHECK(shader_blob_ != nullptr);
     CHECK(native_ptr_ == nullptr);
-    DX11_VERIFY(context.device->CreatePixelShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    DX11_VERIFY(gfx::device->CreatePixelShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
 }
 
-void PixelShader::Bind(GraphicsContext& context)
+void PixelShader::Bind()
 {
-    CHECK(context.device != nullptr);
     CHECK(native_ptr_ != nullptr);
 
-    context.device_context->PSSetShader(native_ptr_.Get(), nullptr, 0);
+    gfx::device_context->PSSetShader(native_ptr_.Get(), nullptr, 0);
 }

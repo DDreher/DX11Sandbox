@@ -14,37 +14,36 @@ Material::~Material()
     LOG("Destroy material");
 }
 
-void Material::Bind(GraphicsContext& context)
+void Material::Bind()
 {
-    vs_->Bind(context);
-    ps_->Bind(context);
+    vs_->Bind();
+    ps_->Bind();
 
     for(const auto& cbuffer : cbuffers_)
     {
         cbuffer->Upload();
-        context.device_context->VSSetConstantBuffers(cbuffer->slot_, 1, cbuffer->buffer_.GetAddressOf());
-        context.device_context->PSSetConstantBuffers(cbuffer->slot_, 1, cbuffer->buffer_.GetAddressOf());
+        gfx::device_context->VSSetConstantBuffers(cbuffer->slot_, 1, cbuffer->buffer_.GetAddressOf());
+        gfx::device_context->PSSetConstantBuffers(cbuffer->slot_, 1, cbuffer->buffer_.GetAddressOf());
     }
 
     for(const auto& [key, val] : texture_parameters_)
     {
-        Texture* tex = context.resource_manager.Get(val.tex);
+        Texture* tex = gfx::resource_manager->Get(val.tex);
         CHECK(tex != nullptr);
-        context.device_context->VSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
-        context.device_context->PSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
+        gfx::device_context->VSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
+        gfx::device_context->PSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
     }
 
-    context.device_context->OMSetBlendState(context.render_state_cache->GetBlendState(blend_state_).Get(), nullptr, 0xffffffff);
-    context.device_context->OMSetDepthStencilState(context.render_state_cache->GetDepthStencilState(depth_stencil_state_).Get(), 1);
-    context.device_context->RSSetState(context.render_state_cache->GetRasterizerState(rasterizer_state_).Get());
+    gfx::device_context->OMSetBlendState(gfx::render_state_cache->GetBlendState(blend_state_).Get(), nullptr, 0xffffffff);
+    gfx::device_context->OMSetDepthStencilState(gfx::render_state_cache->GetDepthStencilState(depth_stencil_state_).Get(), 1);
+    gfx::device_context->RSSetState(gfx::render_state_cache->GetRasterizerState(rasterizer_state_).Get());
 }
 
-void Material::Create(GraphicsContext* context)
+void Material::Create()
 {
-    CHECK(context != nullptr);
-    vs_ = MakeUnique<VertexShader>(context, vs_path_);
+    vs_ = MakeUnique<VertexShader>(vs_path_);
     CHECK(vs_ != nullptr);
-    ps_ = MakeUnique<PixelShader>(context, ps_path_);
+    ps_ = MakeUnique<PixelShader>(ps_path_);
     CHECK(ps_ != nullptr);
 
     std::unordered_set<CBufferBindingDesc> cbuffer_set;
@@ -54,7 +53,7 @@ void Material::Create(GraphicsContext* context)
         auto [it, was_inserted] = cbuffer_set.insert(desc);
         if(was_inserted == true)
         {
-            cbuffers_.push_back(MakeUnique<ConstantBuffer>(context, desc));
+            cbuffers_.push_back(MakeUnique<ConstantBuffer>(desc));
         }
     }
 
@@ -63,7 +62,7 @@ void Material::Create(GraphicsContext* context)
         auto [it, was_inserted] = cbuffer_set.insert(desc);
         if (was_inserted)
         {
-            cbuffers_.push_back(MakeUnique<ConstantBuffer>(context, desc));
+            cbuffers_.push_back(MakeUnique<ConstantBuffer>(desc));
         }
     }
 
