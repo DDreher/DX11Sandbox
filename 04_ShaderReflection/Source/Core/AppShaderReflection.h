@@ -14,7 +14,4 @@ protected:
     void Render() override;
 
     void HandleSDLEvent(const SDL_Event& sdl_event) override;
-
-private:
-    UniquePtr<Renderer> renderer_;
 };

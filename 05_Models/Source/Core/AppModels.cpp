@@ -11,12 +11,10 @@ AppModels::AppModels()
 void AppModels::Init()
 {
     BaseApplication::Init();
-    gfx::Init(window_);
 }
 
 void AppModels::Cleanup()
 {
-    gfx::Shutdown();
     BaseApplication::Cleanup();
 }
 
@@ -28,7 +26,6 @@ void AppModels::Update(double dt)
 void AppModels::Render()
 {
     BaseApplication::Render();
-    gfx::renderer->Render();
 }
 
 void AppModels::HandleSDLEvent(const SDL_Event& sdl_event)

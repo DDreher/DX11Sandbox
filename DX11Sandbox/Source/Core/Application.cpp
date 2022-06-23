@@ -1,6 +1,9 @@
-#include "Application.h"
+#include "Core/Application.h"
 
 #include "SDL.h"
+
+#include "Renderer/GraphicsContext.h"
+#include "Renderer/IRenderer.h"
 
 void BaseApplication::Run()
 {
@@ -20,6 +23,8 @@ void BaseApplication::Init()
 
     SDL_Init(SDL_INIT_VIDEO);
     InitWindow();
+
+    gfx::Init(window_);
 }
 
 void BaseApplication::MainLoop()
@@ -45,6 +50,7 @@ void BaseApplication::MainLoop()
 void BaseApplication::Cleanup()
 {
     LOG("Tearing down application...");
+    gfx::Shutdown();
     systems_.clear();
     DestroyWindow();
     SDL_Quit();
@@ -89,4 +95,5 @@ void BaseApplication::HandleSDLEvent(const SDL_Event& sdl_event)
 
 void BaseApplication::Render()
 {
+    gfx::renderer->Render();
 }

@@ -33,7 +33,7 @@ public:
     virtual void Render() override;
 
 private:
-    static MeshData LoadModel(std::string const& asset_path);
+    static MeshData LoadModel(const std::string& asset_path);
 
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
