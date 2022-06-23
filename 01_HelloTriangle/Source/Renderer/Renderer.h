@@ -10,6 +10,7 @@
 #include <DirectXPackedVector.h>
 
 #include "Core/Window.h"
+#include "Renderer/IRenderer.h"
 #include "Renderer/GraphicsContext.h"
 
 using namespace DirectX;
@@ -47,15 +48,14 @@ struct PixelShader
     ComPtr<ID3D11PixelShader> ps = nullptr;
 };
 
-class Renderer
+class Renderer : public IRenderer
 {
 public:
-    Renderer(Window* window);
+    Renderer();
     Renderer(const Renderer&) = delete;                 // <-- No copy!
     Renderer& operator=(const Renderer&) = delete;      // <-/
-    ~Renderer() = default;
 
-    void Render();
+    virtual void Render() override;
 
 private:
     ID3D11VertexShader* CreateVertexShader(const std::string& path);
@@ -67,10 +67,10 @@ private:
     template<>
     ID3D11VertexShader* CreateShader<ID3D11VertexShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(graphics_context_.device != nullptr);
+        CHECK(gfx::device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11VertexShader* shader = nullptr;
-        graphics_context_.device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        gfx::device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
@@ -79,16 +79,14 @@ private:
     template<>
     ID3D11PixelShader* CreateShader<ID3D11PixelShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(graphics_context_.device != nullptr);
+        CHECK(gfx::device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11PixelShader* shader = nullptr;
-        graphics_context_.device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        gfx::device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
     }
-
-    GraphicsContext graphics_context_;
 
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
 
@@ -122,3 +120,5 @@ private:
         0, 1, 2,
     };
 };
+
+IRenderer* CreateRenderer();
