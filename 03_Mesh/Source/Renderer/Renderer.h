@@ -15,6 +15,7 @@
 #include "Renderer/DX11Types.h"
 #include "Renderer/GraphicsContext.h"
 #include "Renderer/IndexBuffer.h"
+#include "Renderer/IRenderer.h"
 #include "Renderer/Material.h"
 #include "Renderer/Mesh.h"
 #include "Renderer/Shader.h"
@@ -22,10 +23,10 @@
 
 using namespace DirectX;
 
-class Renderer
+class Renderer : public IRenderer
 {
 public:
-    Renderer(Window* window);
+    Renderer();
     Renderer(const Renderer&) = delete;                 // <-- No copy!
     Renderer& operator=(const Renderer&) = delete;      // <-/
     ~Renderer();
@@ -33,9 +34,8 @@ public:
     void Render();
 
 private:
-    static MeshData LoadModel(GraphicsContext const& context, std::string const& asset_path);
+    static MeshData LoadModel(std::string const& asset_path);
 
-    UniquePtr<GraphicsContext> graphics_context_ = MakeUnique<GraphicsContext>();
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
 
@@ -64,3 +64,5 @@ private:
 
     Camera camera_;
 };
+
+IRenderer* CreateRenderer();
