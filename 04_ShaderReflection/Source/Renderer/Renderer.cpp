@@ -97,7 +97,7 @@ Renderer::Renderer()
     cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32) sizeof(CBufferPerFrame));
 
     // Set up camera
-    float aspect_ratio = (float)swap_chain_desc.Width / (float)swap_chain_desc.Height;
+    float aspect_ratio = (float) swap_chain_desc.Width / (float) swap_chain_desc.Height;
     camera_ = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
     camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
 }

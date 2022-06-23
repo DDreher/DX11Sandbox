@@ -12,7 +12,4 @@ protected:
     void Cleanup() override;
     void Update(double dt) override;
     void Render() override;
-
-private:
-    UniquePtr<Renderer> renderer_;
 };
