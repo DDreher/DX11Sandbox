@@ -9,6 +9,7 @@
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
 
+#include "Core/Window.h"
 #include "Renderer/Camera.h"
 #include "Renderer/ConstantBufferTypes.h"
 #include "Renderer/DX11Types.h"
@@ -41,15 +42,16 @@ private:
     ComPtr<ID3D11Texture2D> depth_buffer_ = nullptr;
 
     // Pipeline configuration
-    ComPtr<ID3D11DepthStencilState> depth_stencil_state_= nullptr;
+    ComPtr<ID3D11DepthStencilState> depth_stencil_state_ = nullptr;
 
     D3D11_VIEWPORT viewport_ = { 0 };   // Defines renderable area on screen
 
     // Scene
-    Mesh mesh_;
+    SharedPtr<Model> model_;
+    SharedPtr<Mesh> mesh_;
 
     // General render settings
-    float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
+    float clear_color_[4] = { 100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f, 255.0f / 255.0f };
 
     // Object data
     CBufferPerFrame per_frame_data_;

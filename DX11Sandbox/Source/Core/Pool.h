@@ -66,6 +66,8 @@ public:
 
         CHECK(handles_[index].IsValid() == false);
         handles_[index] = Handle<U>(index, generation);
+
+        CHECK(handles_[index].IsValid());
         return handles_[index];
     }
 

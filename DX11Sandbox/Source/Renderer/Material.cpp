@@ -28,6 +28,7 @@ void Material::Bind()
 
     for(const auto& [key, val] : texture_parameters_)
     {
+        CHECK(val.tex.IsValid());
         Texture* tex = gfx::resource_manager->Get(val.tex);
         CHECK(tex != nullptr);
         gfx::device_context->VSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
@@ -89,6 +90,7 @@ void Material::Create()
 
 void Material::SetTexture(const std::string& param_name, Handle<Texture> texture)
 {
+    CHECK(texture.IsValid());
     auto it = texture_parameters_.find(param_name);
     if(it != texture_parameters_.end())
     {

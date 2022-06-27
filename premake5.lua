@@ -32,6 +32,7 @@ workspace ("DX11Sandbox")
 
     filter { "configurations:Debug" }
         runtime "Debug"
+        staticruntime "off"
         defines { "_DEBUG" }
         symbols "On"
         optimize "Off"
@@ -39,6 +40,7 @@ workspace ("DX11Sandbox")
 
     filter { "configurations:DebugRender" }
         runtime "Debug"
+        staticruntime "off"
         defines { "_DEBUG", "_RENDER_DEBUG" }
         symbols "On"
         optimize "Off"
@@ -46,6 +48,7 @@ workspace ("DX11Sandbox")
 
     filter { "configurations:ReleaseWithDebugInfo" }
         runtime "Release"
+        staticruntime "off"
         defines { "_RELEASE", "NDEBUG" }
         symbols "On"
         optimize "Full"
@@ -53,6 +56,7 @@ workspace ("DX11Sandbox")
 
     filter { "configurations:Release" }
         runtime "Release"
+        staticruntime "off"
         defines { "_RELEASE", "NDEBUG" }
         symbols "Off"
         optimize "Full"
@@ -83,11 +87,11 @@ project (BaseProjectName)
         "4189"  -- local variable initalized but not referenced
     }
 
-    AddSTB()
-    AddSpdlog()
-    AddSDL2()
-    AddAssimp()
-    AddImGui()
+    AddSTB(true)
+    AddSpdlog(true)
+    AddSDL2(true)
+    AddAssimp(true)
+    AddImGui(true)
 
     filter "files:**/ThirdParty/**.*"
         flags "NoPCH"
@@ -263,6 +267,7 @@ project (ProjectName)
         "4189"  -- local variable initalized but not referenced
     }
 
+    includedirs "$(SolutionDir)/ThirdParty/Assimp/include/"
     AddAssimp()
     AddSTB()
     AddSpdlog()

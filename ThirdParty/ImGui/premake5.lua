@@ -2,7 +2,7 @@ project "ImGui"
     kind "StaticLib"
     language "C++"
     cppdialect "C++latest"
-    staticruntime "On"
+    staticruntime "Off"
     configurations {"Debug", "ReleaseWithDebugInfo", "Release"}
 
     targetdir (build_dir)

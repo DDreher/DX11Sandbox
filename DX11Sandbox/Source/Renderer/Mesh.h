@@ -7,6 +7,10 @@
 #include "Renderer/Material.h"
 #include "Renderer/VertexBuffer.h"
 
+struct aiScene;
+struct aiNode;
+struct aiMesh;
+
 struct MeshData : public IBindable
 {
     virtual void Bind() override;
@@ -157,8 +161,8 @@ struct CubeMeshData : public MeshData
 
 struct Mesh : public IBindable
 {
-    Mesh();
-    ~Mesh();
+    Mesh() = default;
+    ~Mesh() = default;
 
     void Update(float dt);
     void Render();
@@ -173,4 +177,61 @@ struct Mesh : public IBindable
 
     CBufferPerObject per_object_data_;
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr;
+
+    std::string name_;
+};
+
+struct Model
+{
+    Model() = default;
+    ~Model() = default;
+
+    static SharedPtr<Model> LoadFromFile(const std::string& asset_path);
+    static void ProcessNode(const aiScene* scene, const aiNode* node, const SharedPtr<Model> model);
+    static void ProcessMesh(const aiScene* scene, const aiNode* node, const aiMesh* mesh, const SharedPtr<Model> model);
+
+    void Update(float dt) 
+    {
+        for (const auto& mesh : submeshes)
+        {
+            mesh->Update(dt);
+        }
+    };
+
+    void Render()
+    {
+        for(const auto& mesh : submeshes)
+        {
+            // TODO: Split between opaque and transparent render passes
+            // TODO: Batch meshes with same material to minimize state changes
+            mesh->Render();
+        }
+    }
+
+    void SetTransform(const Transform& transform)
+    {
+        transform_ = transform;
+        for (const auto& mesh : submeshes)
+        {
+            mesh->transform_ = transform;
+        }
+    }
+
+    void SetTranslation(const Vec3& v)
+    {
+        transform_.translation_ = v;
+        SetTransform(transform_);
+    }
+
+    void SetScaling(const Vec3& v)
+    {
+        transform_.scaling_ = v;
+        SetTransform(transform_);
+    }
+
+    Transform transform_;
+
+    std::vector<SharedPtr<Mesh>> submeshes;
+
+    std::filesystem::path source_path;
 };

@@ -3,6 +3,7 @@
 #include <d3dcompiler.h>
 #if _RENDER_DEBUG
 #include <dxgidebug.h>
+#include <dxgi1_3.h>
 #endif
 
 #include "imgui.h"
@@ -10,7 +11,6 @@
 #include "imgui_impl_sdl.h"
 
 #include "Core/FileIO.h"
-#include "Core/Pool.h"
 #include "Renderer/DX11Util.h"
 #include "Renderer/Texture.h"
 #include "Renderer/Vertex.h"
@@ -49,8 +49,8 @@ Renderer::Renderer()
     DX11_VERIFY(gfx::device->CreateDepthStencilView(depth_buffer_.Get(), nullptr, &backbuffer_depth_view_));
 
     // Configure viewport, i.e. the renderable area
-    viewport_.Width = (float) swap_chain_desc.Width;
-    viewport_.Height = (float) swap_chain_desc.Height;
+    viewport_.Width = (float)swap_chain_desc.Width;
+    viewport_.Height = (float)swap_chain_desc.Height;
     viewport_.TopLeftX = 0.0f;
     viewport_.TopLeftY = 0.0f;
     viewport_.MinDepth = 0.0f;
@@ -59,7 +59,7 @@ Renderer::Renderer()
 
     // Bind render target views to output merger stage of pipeline
     gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
-    
+
     // Bind default global render states
     gfx::device_context->VSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::POINT_CLAMP).GetAddressOf());
     gfx::device_context->VSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::POINT_WRAP).GetAddressOf());
@@ -71,34 +71,13 @@ Renderer::Renderer()
     gfx::device_context->PSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LINEAR_WRAP).GetAddressOf());
 
     // Scene Setup 
-    mesh_.mesh_data_ = MeshData::LoadFromFile("assets/meshes/BOSS_model_final.fbx");
-    auto tex_handle = gfx::resource_manager->CreateTexture("assets/textures/BOSS_texture_final.png");
-    //mesh_.mesh_data_ = MeshData::LoadFromFile("assets/meshes/sea_house.obj");
-    //auto tex_handle = graphics_context_->resource_manager.CreateTexture("assets/textures/sea_11112_sheet_Material__25_color.tga.png");
+    model_ = Model::LoadFromFile("assets/models/the-lighthouse/scene.gltf");
 
-    MaterialDesc material_unlit_textured_desc
-    {
-        .vs_path = "assets/shaders/unlit_textured_tint.vs.hlsl",
-        .ps_path ="assets/shaders/unlit_textured_tint.ps.hlsl",
-        .rasterizer_state = RasterizerState::CULL_CCW,
-        .blend_state = BlendState::BLEND_OPAQUE,
-        .depth_stencil_state = DepthStencilState::DEFAULT
-    };
-
-    SharedPtr<Material> material_unlit_textured = MakeShared<Material>(material_unlit_textured_desc);
-    material_unlit_textured->Create();
-    material_unlit_textured->SetTexture("tex", tex_handle);
-    material_unlit_textured->SetParam("tint", {1.0f, 0.0f, 1.0f});
-
-    mesh_.material_ = material_unlit_textured;
-    mesh_.transform_.scaling_ = { 1.0f };
-    mesh_.transform_.translation_ = { 0.0f, -1.0f, 0.0f };
-
-    //Set up cbuffer
-    cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32) sizeof(CBufferPerFrame));
+    // Set up cbuffer
+    cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32)sizeof(CBufferPerFrame));
 
     // Set up camera
-    float aspect_ratio = (float) swap_chain_desc.Width / (float) swap_chain_desc.Height;
+    float aspect_ratio = (float)swap_chain_desc.Width / (float)swap_chain_desc.Height;
     camera_ = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
     camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
 }
@@ -116,10 +95,13 @@ void Renderer::Render()
     time += dt;
 
     camera_.UpdateMatrices();
-    mesh_.Update(dt);
+    model_->Update(dt);
 
     static Vec3 tint = { 1.0f, 1.0f, 1.0f };
-    mesh_.material_->SetParam("tint", tint);
+    static float scaling = .01f;
+    model_->SetScaling({ scaling });
+
+    //mesh_.material_->SetParam("tint", tint);
 
     // -------------------------------------------------------------------------------
     // Clear backbuffer
@@ -141,7 +123,7 @@ void Renderer::Render()
     gfx::device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
 
     // Submit draw commands
-    mesh_.Render();
+    model_->Render();
 
     // -------------------------------------------------------------------------------
     // Imgui
@@ -151,6 +133,7 @@ void Renderer::Render()
 
     ImGui::Begin("Material Parameters");
     ImGui::SliderFloat3("Tint", reinterpret_cast<float*>(&tint), 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat("Scaling", &scaling, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::End();
 
     ImGui::Render();

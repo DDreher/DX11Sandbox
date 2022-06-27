@@ -19,10 +19,7 @@ public:
     float GetYaw() const;
     float GetRoll() const;
 
-    Vec3 scaling_;
+    Vec3 scaling_ = Vec3(1.0f);
     Quat rotation_;
     Vec3 translation_;
-
-private:
-
 };
