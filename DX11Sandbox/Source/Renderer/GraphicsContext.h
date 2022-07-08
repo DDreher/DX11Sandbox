@@ -3,7 +3,6 @@
 #include <d3d11_3.h>
 
 #include "Renderer/DX11Types.h"
-#include "Renderer/DX11Util.h"
 #include "Renderer/RenderState.h"
 #include "Renderer/ResourceManager.h"
 

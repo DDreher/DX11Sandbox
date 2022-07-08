@@ -1,13 +1,13 @@
 #include "Renderer/GraphicsContext.h"
 
-#include <d3d11_2.h>
-#include <dxgi1_4.h>
+#include <d3d11sdklayers.h>
 
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_sdl.h"
 
 #include "Core/Window.h"
+#include "Renderer/DX11Util.h"
 #include "Renderer/IRenderer.h"
 
 extern IRenderer* CreateRenderer();
@@ -111,8 +111,13 @@ namespace gfx
         delete render_state_cache;
         render_state_cache = nullptr;
 
+        delete resource_manager;
+        resource_manager = nullptr;
+
         swapchain.Reset();
         device_context.Reset();
+
+        ReportLiveObjects(device);
         device.Reset();
     }
 
