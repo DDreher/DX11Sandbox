@@ -6,7 +6,7 @@
 #include "Renderer/DX11Util.h"
 #include "Renderer/GraphicsContext.h"
 
-void Texture::LoadFromFile(const std::string& asset_path)
+void Texture::LoadFromFile(const String& asset_path)
 {
     file_path_ = asset_path;
     stbi_uc* tex_data = stbi_load(file_path_.c_str(), &width_, &height_, &num_channels_, STBI_rgb_alpha);
@@ -32,5 +32,6 @@ void Texture::Create(void* data)
     texture_subresource_data.pSysMem = data;
     texture_subresource_data.SysMemPitch = width_ * 4 * sizeof(uint8);;
     DX11_VERIFY(gfx::device->CreateTexture2D(&texture_desc, &texture_subresource_data, &handle_));
+    SetDebugName(handle_.Get(), file_path_);
     DX11_VERIFY(gfx::device->CreateShaderResourceView(handle_.Get(), nullptr, &srv_));
 }

@@ -1,4 +1,6 @@
-#include "Material.h"
+#include "Renderer/Material.h"
+
+#include "Renderer/GraphicsContext.h"
 
 Material::Material(const MaterialDesc& desc)
 {
@@ -7,6 +9,8 @@ Material::Material(const MaterialDesc& desc)
     SetRasterizerState(desc.rasterizer_state);
     SetBlendState(desc.blend_state);
     SetDepthStencilState(desc.depth_stencil_state);
+
+    Create();
 }
 
 Material::~Material()
@@ -55,6 +59,7 @@ void Material::Create()
         if(was_inserted == true)
         {
             cbuffers_.push_back(MakeUnique<ConstantBuffer>(desc));
+            SetDebugName(cbuffers_[cbuffers_.size() - 1]->buffer_.Get(), vs_path_ + desc.name);
         }
     }
 
@@ -64,6 +69,7 @@ void Material::Create()
         if (was_inserted)
         {
             cbuffers_.push_back(MakeUnique<ConstantBuffer>(desc));
+            SetDebugName(cbuffers_[cbuffers_.size() - 1]->buffer_.Get(), ps_path_ + desc.name);
         }
     }
 

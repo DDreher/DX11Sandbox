@@ -1,6 +1,8 @@
 #pragma once
-#include "Bindable.h"
-#include "DX11Types.h"
+#include <d3d11.h>
+
+#include "Renderer/Bindable.h"
+#include "Renderer/DX11Types.h"
 
 class IndexBuffer : public IBindable
 {
@@ -11,7 +13,6 @@ public:
 
     inline uint32 GetNum() { return num_; };
 
-private:
     uint32 num_ = 0;
     ComPtr<ID3D11Buffer> index_buffer_;
 };

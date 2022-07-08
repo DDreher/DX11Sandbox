@@ -1,11 +1,13 @@
 #pragma comment(lib, "dxguid.lib")
 
-#include "Shader.h"
+#include "Renderer/Shader.h"
 
 #include <d3dcompiler.h>
 
 #include "Core/FileIO.h"
 #include "Renderer/ConstantBuffer.h"
+#include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
 
 namespace
 {
@@ -113,7 +115,7 @@ HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector
 //////////////////////////////////////////////////////////////////////////
 
 ShaderBase::ShaderBase(const std::string& asset_path, EShaderType shader_type)
-    : shader_type_(shader_type)
+    : asset_path_(asset_path), shader_type_(shader_type)
 {
     LoadFromFile(asset_path);
     Compile(shader_code_);
@@ -277,6 +279,7 @@ void VertexShader::Create()
     CHECK(shader_blob_ != nullptr);
     CHECK(native_ptr_ == nullptr);
     DX11_VERIFY(gfx::device->CreateVertexShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    SetDebugName(native_ptr_.Get(), asset_path_.c_str());
 }
 
 void VertexShader::Bind()
@@ -317,8 +320,8 @@ void VertexShader::CreateInputLayoutFromReflection()
 
     DX11_VERIFY(gfx::device->CreateInputLayout(layout_desc.data(), static_cast<UINT>(layout_desc.size()),
         shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), &input_layout_));
+    SetDebugName(input_layout_.Get(), asset_path_.c_str());
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -334,11 +337,11 @@ void PixelShader::Create()
     CHECK(shader_blob_ != nullptr);
     CHECK(native_ptr_ == nullptr);
     DX11_VERIFY(gfx::device->CreatePixelShader(shader_blob_->GetBufferPointer(), shader_blob_->GetBufferSize(), nullptr, &native_ptr_));
+    SetDebugName(native_ptr_.Get(), asset_path_.c_str());
 }
 
 void PixelShader::Bind()
 {
     CHECK(native_ptr_ != nullptr);
-
     gfx::device_context->PSSetShader(native_ptr_.Get(), nullptr, 0);
 }

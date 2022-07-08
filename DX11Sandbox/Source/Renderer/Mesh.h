@@ -173,7 +173,7 @@ struct Mesh : public IBindable
     Transform transform_;
 
     SharedPtr<MeshData> mesh_data_;
-    SharedPtr<Material> material_;
+    Handle<Material> material_;
 
     CBufferPerObject per_object_data_;
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr;
@@ -192,7 +192,7 @@ struct Model
 
     void Update(float dt) 
     {
-        for (const auto& mesh : submeshes)
+        for (const auto& mesh : submeshes_)
         {
             mesh->Update(dt);
         }
@@ -200,7 +200,7 @@ struct Model
 
     void Render()
     {
-        for(const auto& mesh : submeshes)
+        for(const auto& mesh : submeshes_)
         {
             // TODO: Split between opaque and transparent render passes
             // TODO: Batch meshes with same material to minimize state changes
@@ -211,7 +211,7 @@ struct Model
     void SetTransform(const Transform& transform)
     {
         transform_ = transform;
-        for (const auto& mesh : submeshes)
+        for (const auto& mesh : submeshes_)
         {
             mesh->transform_ = transform;
         }
@@ -231,7 +231,7 @@ struct Model
 
     Transform transform_;
 
-    std::vector<SharedPtr<Mesh>> submeshes;
+    std::vector<SharedPtr<Mesh>> submeshes_;
 
-    std::filesystem::path source_path;
+    std::filesystem::path source_path_;
 };

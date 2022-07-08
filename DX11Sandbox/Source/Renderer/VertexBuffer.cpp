@@ -1,6 +1,9 @@
-#include "VertexBuffer.h"
+#include "Renderer/VertexBuffer.h"
 
-#include "DX11Util.h"
+#include <d3d11.h>
+
+#include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
 
 VertexBuffer::VertexBuffer(void* data, uint32 size, size_t bytes_per_element, uint32 slot)
     : stride_((uint32) bytes_per_element),

@@ -1,6 +1,8 @@
 #pragma once
-#include "Bindable.h"
-#include "DX11Types.h"
+#include <d3d11.h>
+
+#include "Renderer/Bindable.h"
+#include "Renderer/DX11Types.h"
 
 struct VertexBufferSlots
 {
@@ -16,7 +18,6 @@ public:
 
     virtual void Bind() override;
 
-private:
     uint32 slot_ = 0;
     uint32 stride_ = 0;
     ComPtr<ID3D11Buffer> vertex_buffer_;

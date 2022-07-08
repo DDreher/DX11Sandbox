@@ -20,6 +20,7 @@ Renderer::Renderer()
     // Get render target view from swapchain backbuffer
     // Even with triple buffering we only need a single render target view
     ComPtr<ID3D11Texture2D> backbuffer;
+    SetDebugName(backbuffer.Get(), "BACK BUFFER");
     DX11_VERIFY(gfx::swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
     DX11_VERIFY(gfx::device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
@@ -45,8 +46,10 @@ Renderer::Renderer()
     DX11_VERIFY(gfx::device->CreateTexture2D(&depth_buffer_desc,
         nullptr,    // ptr to initial data
         &depth_buffer_));
+    SetDebugName(depth_buffer_.Get(), "DEPTH BUFFER");
 
     DX11_VERIFY(gfx::device->CreateDepthStencilView(depth_buffer_.Get(), nullptr, &backbuffer_depth_view_));
+    SetDebugName(backbuffer_depth_view_.Get(), "DEPTH VIEW");
 
     // Configure viewport, i.e. the renderable area
     viewport_.Width = (float)swap_chain_desc.Width;
@@ -75,6 +78,7 @@ Renderer::Renderer()
 
     // Set up cbuffer
     cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32)sizeof(CBufferPerFrame));
+    SetDebugName(cbuffer_per_frame_ ->buffer_.Get(), "Global Per Frame");
 
     // Set up camera
     float aspect_ratio = (float)swap_chain_desc.Width / (float)swap_chain_desc.Height;

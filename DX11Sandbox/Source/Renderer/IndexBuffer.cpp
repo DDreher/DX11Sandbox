@@ -1,6 +1,9 @@
-#include "IndexBuffer.h"
+#include "Renderer/IndexBuffer.h"
 
-#include "DX11Util.h"
+#include <d3d11.h>
+
+#include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
 
 IndexBuffer::IndexBuffer(uint16* indices, uint32 num_indices)
     : num_(num_indices)

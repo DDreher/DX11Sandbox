@@ -2,7 +2,7 @@
 #include "Core/Handle.h"
 #include "Renderer/Bindable.h"
 #include "Renderer/ConstantBuffer.h"
-#include "Renderer/GraphicsContext.h"
+#include "Renderer/RenderState.h"
 #include "Renderer/Shader.h"
 #include "Renderer/Texture.h"
 
@@ -20,7 +20,17 @@ struct MaterialDesc
     RasterizerState rasterizer_state;
     BlendState blend_state;
     DepthStencilState depth_stencil_state;
+
+    bool operator==(const MaterialDesc& other) const
+    {
+        return vs_path == other.vs_path &&
+            ps_path == other.ps_path &&
+            rasterizer_state == other.rasterizer_state &&
+            blend_state == other.blend_state &&
+            depth_stencil_state == other.depth_stencil_state;
+    }
 };
+MAKE_HASHABLE(MaterialDesc, t.vs_path, t.ps_path, t.rasterizer_state, t.blend_state, t.depth_stencil_state);
 
 class Material : public IBindable
 {

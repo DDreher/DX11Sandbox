@@ -36,6 +36,7 @@ void RenderStateCache::InitCommonBlendStates()
 
         common_blend_state_descriptors_[BlendState::BLEND_OPAQUE] = blend_state_desc;
         DX11_VERIFY(gfx::device->CreateBlendState(&blend_state_desc, &blend_state));
+        SetDebugName(blend_state.Get(), "BLEND_OPAQUE");
         blend_state_cache_[blend_state_desc] = blend_state;
     }
 
@@ -58,6 +59,7 @@ void RenderStateCache::InitCommonBlendStates()
 
         common_blend_state_descriptors_[BlendState::BLEND_PREMULTIPLIED_ALPHA] = blend_state_desc;
         DX11_VERIFY(gfx::device->CreateBlendState(&blend_state_desc, &blend_state));
+        SetDebugName(blend_state.Get(), "BLEND_PREMULTIPLIED_ALPHA");
         blend_state_cache_[blend_state_desc] = blend_state;
     }
 
@@ -80,6 +82,7 @@ void RenderStateCache::InitCommonBlendStates()
 
         common_blend_state_descriptors_[BlendState::BLEND_NONPREMULTIPLIED_ALPHA] = blend_state_desc;
         DX11_VERIFY(gfx::device->CreateBlendState(&blend_state_desc, &blend_state));
+        SetDebugName(blend_state.Get(), "BLEND_NONPREMULTIPLIED_ALPHA");
         blend_state_cache_[blend_state_desc] = blend_state;
     }
 
@@ -102,6 +105,7 @@ void RenderStateCache::InitCommonBlendStates()
 
         common_blend_state_descriptors_[BlendState::BLEND_ADDITIVE] = blend_state_desc;
         DX11_VERIFY(gfx::device->CreateBlendState(&blend_state_desc, &blend_state));
+        SetDebugName(blend_state.Get(), "BLEND_ADDITIVE");
         blend_state_cache_[blend_state_desc] = blend_state;
     }
 }
@@ -123,6 +127,7 @@ void RenderStateCache::InitCommonRasterizerStates()
         rasterizer_desc.SlopeScaledDepthBias = 0.0f;
         rasterizer_desc.CullMode = D3D11_CULL_NONE;
         DX11_VERIFY(gfx::device->CreateRasterizerState(&rasterizer_desc, &rasterizer_state));
+        SetDebugName(rasterizer_state.Get(), "WIREFRAME");
         common_rasterizer_state_descriptors_[RasterizerState::WIREFRAME] = rasterizer_desc;
     }
 
@@ -141,8 +146,8 @@ void RenderStateCache::InitCommonRasterizerStates()
         rasterizer_desc.SlopeScaledDepthBias = 0.0f;
         rasterizer_desc.CullMode = D3D11_CULL_NONE;
         DX11_VERIFY(gfx::device->CreateRasterizerState(&rasterizer_desc, &rasterizer_state));
+        SetDebugName(rasterizer_state.Get(), "CULL_NONE");
         common_rasterizer_state_descriptors_[RasterizerState::CULL_NONE] = rasterizer_desc;
-
     }
 
     // CULL_CW
@@ -160,6 +165,7 @@ void RenderStateCache::InitCommonRasterizerStates()
         rasterizer_desc.SlopeScaledDepthBias = 0.0f;
         rasterizer_desc.CullMode = D3D11_CULL_FRONT;
         DX11_VERIFY(gfx::device->CreateRasterizerState(&rasterizer_desc, &rasterizer_state));
+        SetDebugName(rasterizer_state.Get(), "CULL_CW");
         common_rasterizer_state_descriptors_[RasterizerState::CULL_CW] = rasterizer_desc;
     }
 
@@ -178,6 +184,7 @@ void RenderStateCache::InitCommonRasterizerStates()
         rasterizer_desc.SlopeScaledDepthBias = 0.0f;
         rasterizer_desc.CullMode = D3D11_CULL_BACK;
         DX11_VERIFY(gfx::device->CreateRasterizerState(&rasterizer_desc, &rasterizer_state));
+        SetDebugName(rasterizer_state.Get(), "CULL_CCW");
         common_rasterizer_state_descriptors_[RasterizerState::CULL_CCW] = rasterizer_desc;
     }
 }
@@ -191,6 +198,7 @@ void RenderStateCache::InitCommonDepthStencilStates()
     desc.DepthFunc = D3D11_COMPARISON_LESS;
     desc.StencilEnable = FALSE;
     DX11_VERIFY(gfx::device->CreateDepthStencilState(&desc, &state));
+    SetDebugName(state.Get(), "DEFAULT");
     common_depth_stencil_state_descriptors_[DepthStencilState::DEFAULT] = desc;
 }
 
@@ -215,6 +223,7 @@ void RenderStateCache::InitCommonSamplerStates()
         desc.MaxLOD = FLT_MAX;
         common_sampler_state_descriptors_[SamplerState::POINT_CLAMP] = desc;
         DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "POINT_CLAMP");
         sampler_state_cache_[desc] = state;
     }
 
@@ -237,6 +246,7 @@ void RenderStateCache::InitCommonSamplerStates()
         desc.MaxLOD = FLT_MAX;
         common_sampler_state_descriptors_[SamplerState::POINT_WRAP] = desc;
         DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "POINT_WRAP");
         sampler_state_cache_[desc] = state;
     }
 
@@ -259,6 +269,7 @@ void RenderStateCache::InitCommonSamplerStates()
         desc.MaxLOD = FLT_MAX;
         common_sampler_state_descriptors_[SamplerState::LINEAR_CLAMP] = desc;
         DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "LINEAR_CLAMP");
         sampler_state_cache_[desc] = state;
     }
 
@@ -281,6 +292,7 @@ void RenderStateCache::InitCommonSamplerStates()
         desc.MaxLOD = FLT_MAX;
         common_sampler_state_descriptors_[SamplerState::LINEAR_WRAP] = desc;
         DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "LINEAR_WRAP");
         sampler_state_cache_[desc] = state;
     }
 }
