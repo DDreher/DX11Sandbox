@@ -30,7 +30,8 @@ public:
         elements_ = nullptr;
     }
 
-    Handle<U> Create()
+    template<typename... Args>
+    Handle<U> Create(Args&&... args)
     {
         uint32 index;
         if(free_list_.size() > 0)
@@ -62,7 +63,7 @@ public:
         CHECK(generation != Handle<U>::INVALID_GENERATION); // TODO: Handle case where we run out of generations (which will probably never happen...)
 
         void* element_addr = &((T*) elements_)[index];
-        new (element_addr) T();
+        new (element_addr) T(std::forward<Args>(args)...);
 
         CHECK(handles_[index].IsValid() == false);
         handles_[index] = Handle<U>(index, generation);
@@ -71,7 +72,7 @@ public:
         return handles_[index];
     }
 
-    T* Get(Handle<U> handle)
+    T* Get(Handle<U> handle) const
     {
         if(handle.generation_ != Handle<U>::INVALID_GENERATION && generations_[handle.index_] == handle.generation_)
         {
