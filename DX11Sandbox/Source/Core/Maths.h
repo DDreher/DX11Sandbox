@@ -2,6 +2,12 @@
 #include <DirectXMath.h>
 #include <DirectXMathMatrix.inl>
 
+struct Vec2;
+struct Vec3;
+struct Vec4;
+struct Mat4;
+struct Quat;
+
 struct MathUtils
 {
     static float DegToRad(float value)
@@ -136,9 +142,18 @@ struct Mat4 : public DirectX::XMFLOAT4X4
     Mat4(const DirectX::XMFLOAT4X4& other) { memcpy(this, &other, sizeof(DirectX::XMFLOAT4X4)); }
     Mat4(const DirectX::XMMATRIX& other) { DirectX::XMStoreFloat4x4(this, other); }
 
+    Mat4(const Mat4&) = default;
+    Mat4& operator=(const Mat4&) = default;
+
+    Mat4(Mat4&&) = default;
+    Mat4& operator=(Mat4&&) = default;
+
+    Mat4& operator*= (const Mat4& other);
+
     operator DirectX::XMMATRIX() const { return DirectX::XMLoadFloat4x4(this); }
 
     Mat4 Transpose() const;
+    Mat4 Invert() const;
 
     static Mat4 Translation(const Vec3& v);
     static Mat4 Translation(float x, float y, float z);
@@ -148,14 +163,13 @@ struct Mat4 : public DirectX::XMFLOAT4X4
     static Mat4 Scaling(float s);
     static Mat4 Scaling(const Vec3& v);
     static Mat4 Scaling(float x, float y, float z);
+    static Mat4 SRT(const Vec3& scaling, const Quat& rotation, const Vec3& translation);
 
     static Mat4 LookAt(const Vec3& origin, const Vec3& target, const Vec3& up);
     static Mat4 PerspectiveFovLH(float fov_y_rad, float aspect_ratio, float near_z, float far_z);
 
     static const Mat4 IDENTITY;
 };
-
-Mat4 operator*(const Mat4& mat_a, const Mat4& mat_b);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -289,3 +303,6 @@ inline Quat operator/ (const Quat& a, const Quat& b)
     XMStoreFloat4(&out, XMQuaternionMultiply(q1, q2));
     return out;
 }
+
+Vec3 operator*(const Vec3& v, const Mat4& m);
+Mat4 operator*(const Mat4& mat_a, const Mat4& mat_b);

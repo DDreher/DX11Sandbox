@@ -11,10 +11,40 @@ const Vec3 Vec3::LEFT = { -1.0f, 0.0f, 0.0f };
 
 //////////////////////////////////////////////////////////////////////////
 
+Vec3 operator*(const Vec3& v, const Mat4& m)
+{
+    using namespace DirectX;
+    const XMVECTOR vec = XMLoadFloat3(&v);
+    const XMMATRIX mat = XMLoadFloat4x4(&m);
+    const XMVECTOR result = XMVector3TransformCoord(vec, mat);
+
+    Vec3 out;
+    XMStoreFloat3(&out, result);
+    return result;
+}
+
+Mat4& Mat4::operator*=(const Mat4& other)
+{
+    using namespace DirectX;
+    const XMMATRIX m_1 = XMLoadFloat4x4(this);
+    const XMMATRIX m_2 = XMLoadFloat4x4(&other);
+    const XMMATRIX multiplied = XMMatrixMultiply(m_1, m_2);
+    XMStoreFloat4x4(this, multiplied);
+    return *this;
+}
+
 Mat4 Mat4::Transpose() const
 {
     DirectX::XMMATRIX mat = *this;
     return Mat4(DirectX::XMMatrixTranspose(mat));
+}
+
+Mat4 Mat4::Invert() const
+{
+    using namespace DirectX;
+    XMMATRIX mat = *this;
+    XMVECTOR det;
+    return DirectX::XMMatrixInverse(&det, mat);
 }
 
 Mat4 Mat4::Translation(const Vec3& v)
@@ -57,6 +87,11 @@ Mat4 Mat4::Scaling(float x, float y, float z)
     return DirectX::XMMatrixScaling(x, y, z);
 }
 
+Mat4 Mat4::SRT(const Vec3& scaling, const Quat& rotation, const Vec3& translation)
+{
+    return Mat4::Scaling(scaling) * rotation.ToMatrix() * Mat4::Translation(translation);
+}
+
 Mat4 Mat4::LookAt(const Vec3& origin, const Vec3& target, const Vec3& up)
 {
     return DirectX::XMMatrixLookAtLH(origin, target, up);
@@ -90,15 +125,6 @@ Quat Quat::Inverse()
     const XMVECTOR q = XMLoadFloat4(this);
     Quat out;
     XMStoreFloat4(&out, XMQuaternionInverse(q));
-    return out;
-}
-
-Vec3 Quat::ToEuler() const
-{
-    Vec3 out;
-
-    // TODO
-
     return out;
 }
 
