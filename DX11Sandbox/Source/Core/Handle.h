@@ -8,6 +8,9 @@
 template<typename T>
 class Handle
 {
+    template<typename, typename>
+    friend class Pool;
+
 public:
     Handle() : index_(0), generation_(INVALID_GENERATION) {};
     bool IsValid() const { return generation_ != Handle::INVALID_GENERATION; }
@@ -34,7 +37,4 @@ private:
 
         uint64 id_;
     };
-
-    template<typename, typename> 
-    friend class Pool;
 };

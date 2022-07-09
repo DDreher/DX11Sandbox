@@ -13,14 +13,9 @@ Material::Material(const MaterialDesc& desc)
     Create();
 }
 
-Material::~Material()
-{
-    LOG("Destroy material");
-}
-
 void Material::Bind()
 {
-    vs_->Bind();
+    gfx::resource_manager->Get(vs_)->Bind();
     ps_->Bind();
 
     for(const auto& cbuffer : cbuffers_)
@@ -46,14 +41,16 @@ void Material::Bind()
 
 void Material::Create()
 {
-    vs_ = MakeUnique<VertexShader>(vs_path_);
-    CHECK(vs_ != nullptr);
-    ps_ = MakeUnique<PixelShader>(ps_path_);
+    vs_ = gfx::resource_manager->CreateOrGet(VertexShaderDesc{ vs_path_ });
+    CHECK(vs_.IsValid());
+
+    ps_ = MakeUnique<PixelShader>(PixelShaderDesc{ ps_path_ });
     CHECK(ps_ != nullptr);
 
     std::unordered_set<CBufferBindingDesc> cbuffer_set;
 
-    for (auto& desc : vs_->cbuffer_bindings_)
+    VertexShader* vs = gfx::resource_manager->Get(vs_);
+    for (auto& desc : vs->cbuffer_bindings_)
     {
         auto [it, was_inserted] = cbuffer_set.insert(desc);
         if(was_inserted == true)
@@ -73,7 +70,7 @@ void Material::Create()
         }
     }
 
-    for(const auto& texture_binding : vs_->texture_bindings_)
+    for(const auto& texture_binding : vs->texture_bindings_)
     {
         TextureParameter tex_param =
         {

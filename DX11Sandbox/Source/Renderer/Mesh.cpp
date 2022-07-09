@@ -109,9 +109,10 @@ void Mesh::Bind()
 
 void Mesh::Update(float dt)
 {
-    transform_.rotation_ *= Quat::FromAxisAngle(Vec3::UP, MathUtils::DegToRad(25.0f) * dt);
-    transform_.rotation_.Normalize();
-    per_object_data_.mat_world = transform_.ToMatrix().Transpose();
+    Quat rot = transform_.GetWorldRotation() * Quat::FromAxisAngle(Vec3::UP, MathUtils::DegToRad(25.0f) * dt);
+    rot.Normalize();
+    transform_.SetWorldRotation(rot);
+    per_object_data_.mat_world = transform_.GetWorldMatrix().Transpose();
 }
 
 SharedPtr<Model> Model::LoadFromFile(const std::string& asset_path)
@@ -136,10 +137,7 @@ SharedPtr<Model> Model::LoadFromFile(const std::string& asset_path)
     aiVector3t<float> pos;
     ai_scene->mRootNode->mTransformation.Decompose(scaling, rot_axis, rot_angle, pos);
 
-    Transform t;
-    t.scaling_ = { scaling.x, scaling.y, scaling.z };
-    t.rotation_ = Quat::FromAxisAngle({ rot_axis.x, rot_axis.y, rot_axis.z }, rot_angle);
-    t.translation_ = { pos.x, pos.y, pos.z };
+    Transform t({ scaling.x, scaling.y, scaling.z }, Quat::FromAxisAngle({ rot_axis.x, rot_axis.y, rot_axis.z }, rot_angle), { pos.x, pos.y, pos.z });
     model->SetTransform(t);
 
     return model;

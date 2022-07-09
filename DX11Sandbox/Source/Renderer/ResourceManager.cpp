@@ -46,11 +46,6 @@ Texture* ResourceManager::Get(Handle<Texture> handle) const
     return texture_pool_.Get(handle);
 }
 
-void ResourceManager::Destroy(Handle<Texture> handle)
-{
-    texture_pool_.Destroy(handle);
-}
-
 Handle<Material> ResourceManager::Create(const MaterialDesc& desc)
 {
     Handle<Material> out_handle = material_pool_.Create(desc);
@@ -68,14 +63,12 @@ Handle<Material> ResourceManager::CreateOrGet(const MaterialDesc& desc)
     if (it != material_map_.end())
     {
         handle = it->second;
-        LOG("Found Material");
     }
 
     if (!handle.IsValid())
     {
         handle = Create(desc);
         LOG("Created material");
-
     }
 
     return handle;
@@ -103,4 +96,54 @@ Material* ResourceManager::Get(Handle<Material> handle) const
 void ResourceManager::Destroy(Handle<Material> handle)
 {
     material_pool_.Destroy(handle);
+}
+
+Handle<VertexShader> ResourceManager::Create(const VertexShaderDesc& desc)
+{
+    Handle<VertexShader> out_handle = vertex_shader_pool_.Create(desc);
+    VertexShader* shader = vertex_shader_pool_.Get(out_handle);
+    vertex_shader_map_[desc] = out_handle;
+    return out_handle;
+}
+
+Handle<VertexShader> ResourceManager::CreateOrGet(const VertexShaderDesc& desc)
+{
+    Handle<VertexShader> handle;
+
+    auto it = vertex_shader_map_.find(desc);
+    if (it != vertex_shader_map_.end())
+    {
+        handle = it->second;
+    }
+
+    if (!handle.IsValid())
+    {
+        handle = Create(desc);
+    }
+
+    return handle;
+}
+
+VertexShader* ResourceManager::Get(const VertexShaderDesc& desc) const
+{
+    VertexShader* out = nullptr;
+
+    auto it = vertex_shader_map_.find(desc);
+    if (it != vertex_shader_map_.end())
+    {
+        Handle<VertexShader> handle = it->second;
+        out = Get(handle);
+    }
+
+    return out;
+}
+
+VertexShader* ResourceManager::Get(Handle<VertexShader> handle) const
+{
+    return vertex_shader_pool_.Get(handle);
+}
+
+void ResourceManager::Destroy(Handle<VertexShader> handle)
+{
+    vertex_shader_pool_.Destroy(handle);
 }

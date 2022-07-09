@@ -1,7 +1,6 @@
 #pragma once
 #include <d3d11.h>
 
-#include "Renderer/Bindable.h"
 #include "Renderer/DX11Types.h"
 
 struct VertexBufferSlots
@@ -11,12 +10,12 @@ struct VertexBufferSlots
     static constexpr uint32 TEX_COORD = 2;
 };
 
-class VertexBuffer : public IBindable
+class VertexBuffer
 {
 public:
     VertexBuffer(void* data, uint32 size, size_t bytes_per_element, uint32 slot);
 
-    virtual void Bind() override;
+    void Bind();
 
     uint32 slot_ = 0;
     uint32 stride_ = 0;

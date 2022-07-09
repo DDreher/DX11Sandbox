@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine/Transform.h"
-#include "Renderer/Bindable.h"
 #include "Renderer/ConstantBufferTypes.h"
 #include "Renderer/GraphicsContext.h"
 #include "Renderer/IndexBuffer.h"
@@ -11,9 +10,9 @@ struct aiScene;
 struct aiNode;
 struct aiMesh;
 
-struct MeshData : public IBindable
+struct MeshData
 {
-    virtual void Bind() override;
+    void Bind();
 
     static SharedPtr<MeshData> LoadFromFile(const std::string& asset_path);
     
@@ -159,7 +158,7 @@ struct CubeMeshData : public MeshData
     }
 };
 
-struct Mesh : public IBindable
+struct Mesh
 {
     Mesh() = default;
     ~Mesh() = default;
@@ -167,7 +166,7 @@ struct Mesh : public IBindable
     void Update(float dt);
     void Render();
 
-    virtual void Bind() override;
+    void Bind();
 
     float rotation_angle_ = 0.0f;
     Transform transform_;
@@ -219,13 +218,13 @@ struct Model
 
     void SetTranslation(const Vec3& v)
     {
-        transform_.translation_ = v;
+        transform_.SetWorldTranslation(v);
         SetTransform(transform_);
     }
 
     void SetScaling(const Vec3& v)
     {
-        transform_.scaling_ = v;
+        transform_.SetWorldScaling(v);
         SetTransform(transform_);
     }
 

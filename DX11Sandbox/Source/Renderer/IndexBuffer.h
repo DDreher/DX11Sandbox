@@ -1,15 +1,14 @@
 #pragma once
 #include <d3d11.h>
 
-#include "Renderer/Bindable.h"
 #include "Renderer/DX11Types.h"
 
-class IndexBuffer : public IBindable
+class IndexBuffer
 {
 public:
     IndexBuffer(uint16* indices, uint32 num_indices);
 
-    void Bind() override;
+    void Bind();
 
     inline uint32 GetNum() { return num_; };
 

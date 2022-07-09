@@ -3,7 +3,6 @@
 #include <d3d11shader.h>
 
 #include "Core/FileIO.h"
-#include "Renderer/Bindable.h"
 #include "Renderer/ConstantBuffer.h"
 #include "Renderer/DX11Types.h"
 #include "Renderer/DX11Util.h"
@@ -33,7 +32,7 @@ struct TextureBindingDesc
     UINT slot;
 };
 
-class ShaderBase : public IBindable
+class ShaderBase
 {
     friend class Material;
 
@@ -43,7 +42,6 @@ public:
 
     bool LoadFromFile(const std::string asset_path);
     bool Compile(const std::vector<char>& bytes);
-    virtual void Create() {};
 
 protected:
     virtual void Reflect();
@@ -60,14 +58,35 @@ protected:
     std::vector<TextureBindingDesc> texture_bindings_;
 };
 
+struct VertexShaderDesc
+{
+    std::string& path;
+    
+    bool operator==(const VertexShaderDesc& other) const
+    {
+        return path == other.path;
+    }
+};
+MAKE_HASHABLE(VertexShaderDesc, t.path);
+
 class VertexShader : public ShaderBase
 {
 public:
-    VertexShader(const std::string& asset_path);
+    VertexShader(const VertexShaderDesc& desc);
     virtual ~VertexShader() {};
 
-    virtual void Create() override;
-    virtual void Bind() override;
+    void Create();
+    void Bind();
+
+    ComPtr<ID3D11VertexShader> GetNativePtr() const
+    {
+        return native_ptr_;
+    }
+
+    ComPtr<ID3D11InputLayout> GetInputLayout() const
+    {
+        return input_layout_;
+    }
 
 protected:
     virtual void Reflect() override;
@@ -78,14 +97,25 @@ protected:
     ComPtr<ID3D11InputLayout> input_layout_;
 };
 
+struct PixelShaderDesc
+{
+    std::string& path;
+
+    bool operator==(const PixelShaderDesc& other) const
+    {
+        return path == other.path;
+    }
+};
+MAKE_HASHABLE(PixelShaderDesc, t.path);
+
 class PixelShader : public ShaderBase
 {
 public:
-    PixelShader(const std::string& asset_path);
+    PixelShader(const PixelShaderDesc& desc);
     virtual ~PixelShader() {};
 
-    virtual void Create() override;
-    virtual void Bind() override;
+    void Create();
+    void Bind();
 
 protected:
     ComPtr<ID3D11PixelShader> native_ptr_;

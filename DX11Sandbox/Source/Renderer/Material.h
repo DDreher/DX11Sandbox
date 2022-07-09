@@ -1,6 +1,5 @@
 #pragma once
 #include "Core/Handle.h"
-#include "Renderer/Bindable.h"
 #include "Renderer/ConstantBuffer.h"
 #include "Renderer/RenderState.h"
 #include "Renderer/Shader.h"
@@ -32,14 +31,12 @@ struct MaterialDesc
 };
 MAKE_HASHABLE(MaterialDesc, t.vs_path, t.ps_path, t.rasterizer_state, t.blend_state, t.depth_stencil_state);
 
-class Material : public IBindable
+class Material
 {
 public:
     Material(const MaterialDesc& desc);
-    ~Material();
 
-    virtual void Bind() override;
-
+    void Bind();
     void Create();
 
     void SetTexture(const std::string& param_name, Handle<Texture> texture);
@@ -66,7 +63,8 @@ public:
 
 public:
     std::string vs_path_;
-    UniquePtr<VertexShader> vs_;
+    //UniquePtr<VertexShader> vs_;
+    Handle<VertexShader> vs_;
     std::string ps_path_;
     UniquePtr<PixelShader> ps_;
 

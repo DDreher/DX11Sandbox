@@ -267,8 +267,8 @@ void ShaderBase::Reflect()
 
 //////////////////////////////////////////////////////////////////////////
 
-VertexShader::VertexShader(const std::string& asset_path)
-    : ShaderBase(asset_path, EShaderType::VS)
+VertexShader::VertexShader(const VertexShaderDesc& desc)
+    : ShaderBase(desc.path, EShaderType::VS)
 {
     Create();
     Reflect();
@@ -288,6 +288,7 @@ void VertexShader::Bind()
     gfx::device_context->IASetInputLayout(input_layout_.Get());
 
     CHECK(native_ptr_ != nullptr);
+
     gfx::device_context->VSSetShader(native_ptr_.Get(), nullptr, 0);
 }
 
@@ -325,8 +326,8 @@ void VertexShader::CreateInputLayoutFromReflection()
 
 //////////////////////////////////////////////////////////////////////////
 
-PixelShader::PixelShader(const std::string& asset_path)
-    : ShaderBase(asset_path, EShaderType::PS)
+PixelShader::PixelShader(const PixelShaderDesc& desc)
+    : ShaderBase(desc.path, EShaderType::PS)
 {
     Create();
     Reflect();
