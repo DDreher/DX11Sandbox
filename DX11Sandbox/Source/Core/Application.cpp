@@ -34,13 +34,11 @@ void BaseApplication::MainLoop()
     while (window_->GetIsClosed() == false)
     {
         tick_timer_.Update();
-        double frame_time = tick_timer_.GetAccumulatedTime();
-
-        while(frame_time > 0.0)
+        while (tick_timer_.accumulated_time_ > 0.0)
         {
-            double delta_time = std::min(frame_time, TickTimer::TICK_TIME);
+            double delta_time = std::min(tick_timer_.accumulated_time_, TickTimer::TICK_TIME);
             Update(delta_time);
-            frame_time -= delta_time;
+            tick_timer_.accumulated_time_ -= delta_time;
         }
 
         Render();
