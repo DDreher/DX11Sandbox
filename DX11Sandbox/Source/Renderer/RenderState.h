@@ -10,11 +10,15 @@ enum class BlendState : uint8
     BLEND_ADDITIVE
 };
 
-MAKE_HASHABLE(D3D11_BLEND_DESC);
+MAKE_HASHABLE(D3D11_BLEND_DESC, t.AlphaToCoverageEnable, t.IndependentBlendEnable);
 
 inline bool operator==(const D3D11_BLEND_DESC& lhs, const D3D11_BLEND_DESC& rhs)
 {
-    bool result = false;
+    bool result = true;
+
+    result = result &&
+        lhs.AlphaToCoverageEnable == rhs.AlphaToCoverageEnable &&
+        lhs.IndependentBlendEnable == rhs.IndependentBlendEnable;
 
     for (size_t i = 0; i < 8; i++)
     {
@@ -27,11 +31,12 @@ inline bool operator==(const D3D11_BLEND_DESC& lhs, const D3D11_BLEND_DESC& rhs)
             lhs.RenderTarget[i].RenderTargetWriteMask == rhs.RenderTarget[i].RenderTargetWriteMask &&
             lhs.RenderTarget[i].SrcBlend == rhs.RenderTarget[i].SrcBlend &&
             lhs.RenderTarget[i].SrcBlendAlpha == rhs.RenderTarget[i].SrcBlendAlpha;
-    }
 
-    result = result &&
-        lhs.AlphaToCoverageEnable == rhs.AlphaToCoverageEnable &&
-        lhs.IndependentBlendEnable == rhs.IndependentBlendEnable;
+        if(result == false)
+        {
+            break;
+        }
+    }
 
     return result;
 }
