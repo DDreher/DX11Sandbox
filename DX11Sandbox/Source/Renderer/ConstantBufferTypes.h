@@ -5,7 +5,7 @@ struct CBufferPerObject
 {
     Mat4 mat_world;
     Vec3 color = Vec3(1.0f);
-    float padding;
+    float padding = 0.0f;
 };
 
 DECLSPEC_ALIGN(16)
