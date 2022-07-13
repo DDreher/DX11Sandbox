@@ -38,14 +38,22 @@ const Mat4& Transform::GetLocalMatrix() const
 
 void Transform::SetWorldScaling(const Vec3& scaling)
 {
-    scaling_world_ = scaling;
-    SetDirty();
+    if (scaling_world_ != scaling)
+    {
+        scaling_world_ = scaling;
+        SetDirty();
+        RecalculateTransform();
+    }
 }
 
 void Transform::SetWorldRotation(const Quat& rotation)
 {
-    rotation_world_ = rotation;
-    SetDirty();
+    if (rotation_world_ != rotation)
+    {
+        rotation_world_ = rotation;
+        SetDirty();
+        RecalculateTransform();
+    }
 }
 
 void Transform::SetWorldTranslation(const Vec3& translation)

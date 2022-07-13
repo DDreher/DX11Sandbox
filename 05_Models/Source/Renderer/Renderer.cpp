@@ -73,8 +73,13 @@ Renderer::Renderer()
     gfx::device_context->PSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LINEAR_CLAMP).GetAddressOf());
     gfx::device_context->PSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LINEAR_WRAP).GetAddressOf());
 
-    // Scene Setup 
-    model_ = Model::LoadFromFile("assets/models/the-lighthouse/scene.gltf");
+    // Scene Setup
+    String model_path = "assets/models/the-lighthouse/scene.gltf";
+    //String model_path = "assets/models/viking_room/scene.gltf";
+    //model_ = Model::LoadFromFile(model_path);
+    Transform t;
+    t.SetWorldRotation(Quat::FromAxisAngle(Vec3::RIGHT, 90.0f));
+    model_ = ModelImporter::LoadFromFile({ model_path, t});
 
     // Set up cbuffer
     cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32)sizeof(CBufferPerFrame));
@@ -82,8 +87,8 @@ Renderer::Renderer()
 
     // Set up camera
     float aspect_ratio = (float)swap_chain_desc.Width / (float)swap_chain_desc.Height;
-    camera_ = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
-    camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
+    camera_ = Camera(Vec3(0.0f, 0.0f, 10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
+    camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f));
 }
 
 Renderer::~Renderer()
@@ -95,17 +100,15 @@ void Renderer::Render()
     // Update objects (temporarily in here for testing purposes)
     static float dt = 1.0f / 60.0f;
     static float time = 0.0f;
-
     time += dt;
-
-    camera_.UpdateMatrices();
-    model_->Update(dt);
 
     static Vec3 tint = { 1.0f, 1.0f, 1.0f };
     static float scaling = .01f;
-    model_->SetScaling({ scaling });
 
-    //mesh_.material_->SetParam("tint", tint);
+    camera_.UpdateMatrices();
+    
+    model_->transform_.SetWorldScaling(scaling);
+    //model_->transform_.SetWorldRotation(Quat::FromAxisAngle(Vec3::UP, time));
 
     // -------------------------------------------------------------------------------
     // Clear backbuffer
@@ -118,10 +121,8 @@ void Renderer::Render()
 
     // Update per-frame cbuffer
     Mat4 mat_vp = camera_.GetViewProjection();
-
     per_frame_data_.mat_view_projection = mat_vp.Transpose();   // CPU: row major, GPU: col major! -> We have to transpose.
                                                                 // See: https://stackoverflow.com/questions/41405994/hlsl-mul-and-d3dxmatrix-order-mismatch
-
     cbuffer_per_frame_->Upload(reinterpret_cast<uint8*>(&per_frame_data_), sizeof(CBufferPerFrame));
     gfx::device_context->VSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
     gfx::device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
@@ -130,13 +131,12 @@ void Renderer::Render()
     model_->Render();
 
     // -------------------------------------------------------------------------------
-    // Imgui
+    // Debug UI
     ImGui_ImplSDL2_NewFrame();
     ImGui_ImplDX11_NewFrame();
     ImGui::NewFrame();
 
     ImGui::Begin("Material Parameters");
-    ImGui::SliderFloat3("Tint", reinterpret_cast<float*>(&tint), 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::SliderFloat("Scaling", &scaling, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::End();
 

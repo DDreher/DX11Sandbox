@@ -6,58 +6,188 @@
 
 #include "Renderer/GraphicsContext.h"
 
-SharedPtr<MeshData> MeshData::LoadFromFile(const std::string& asset_path)
+void StaticMesh::Bind() const
 {
-    LOG("Loading mesh: {}", asset_path);
+}
 
-    SharedPtr<MeshData> mesh_data = MakeShared<MeshData>();
+void StaticMesh::Render() const
+{
+    gfx::device_context->DrawIndexed(num_indices, start_idx, offset);
+}
 
-    std::vector<uint16> indices;
-    std::vector<Vec3> pos;
-    std::vector<Vec3> normals;
-    std::vector<Vec2> uvs;
+SharedPtr<Model> ModelImporter::LoadFromFile(const ModelDescription& desc)
+{
+    LOG("Loading model: {}", desc.path);
+    auto root_path = std::filesystem::path(desc.path).parent_path();
 
-    Assimp::Importer importer;
+    SharedPtr<Model> model = MakeShared<Model>();
 
-    std::vector<char> bytes = FileIO::ReadFile(asset_path);
-
+    Assimp::Importer ai_importer;
     uint32 importer_flags = aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast;
-    const aiScene* scene = importer.ReadFileFromMemory(bytes.data(), bytes.size(), importer_flags);
-    CHECK_MSG(scene != nullptr, "Failed to load mesh from file: {}", asset_path);
+    const aiScene* ai_scene = ai_importer.ReadFile(desc.path, importer_flags);
+    CHECK_MSG(ai_scene != nullptr, "Failed to load mesh from file: {}. \n Error: {}", desc.path, ai_importer.GetErrorString());
 
-    for (uint32 mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx)
+    for (uint32 i = 0; i < ai_scene->mNumMaterials; ++i)
     {
-        aiMesh* mesh = scene->mMeshes[mesh_idx];
-        for (uint32 vertex_id = 0; vertex_id < mesh->mNumVertices; ++vertex_id)
+        auto ai_material = ai_scene->mMaterials[i];
+
+        MaterialDesc mat_desc_textured
         {
-            const aiVector3D& vertex = mesh->mVertices[vertex_id];
-            pos.push_back({ vertex.x, vertex.y, vertex.z });
+            .vs_path = "assets/shaders/unlit_textured.vs.hlsl",
+            .ps_path = "assets/shaders/unlit_textured.ps.hlsl",
+            .rasterizer_state = RasterizerState::CULL_CCW,
+            .blend_state = BlendState::BLEND_OPAQUE,
+            .depth_stencil_state = DepthStencilState::DEFAULT
+        };
 
-            const aiVector3D& normal = mesh->HasNormals() ? mesh->mNormals[vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
-            normals.push_back({ normal.x, normal.y, normal.z });
+        Handle<Material> mat_handle = gfx::resource_manager->Create(mat_desc_textured);
+        Material* mat = gfx::resource_manager->Get(mat_handle);
 
-            const aiVector3D& uv = mesh->HasTextureCoords(0) ? mesh->mTextureCoords[0][vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
-            uvs.push_back({ uv.x, uv.y });
+        aiString diffuse_tex_path;
+        if (ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &diffuse_tex_path) == AI_SUCCESS &&
+            diffuse_tex_path.C_Str() != "")
+        {
+            std::filesystem::path tex_path = root_path / std::filesystem::path(diffuse_tex_path.C_Str());
+            Handle<Texture> tex = gfx::resource_manager->CreateOrGet(TextureDesc{ tex_path.string() });
+
+            mat->SetTexture("tex", tex);
         }
 
-        for (uint32 i = 0; i < mesh->mNumFaces; ++i)
+        model->materials_.push_back(mat_handle);
+    }
+
+    VertexData vertex_data;
+
+    std::deque<aiNode*> nodes;
+    nodes.push_back(ai_scene->mRootNode);
+
+    std::vector<int> preorder_indices;
+
+    // Preorder traversal of scene tree
+    uint32 num_model_indices = 0;
+    uint32 num_model_vertices = 0;
+    while(nodes.size() > 0)
+    {
+        aiNode* ai_node = nodes.back();
+        nodes.pop_back();
+
+        for (uint32 mesh_idx = 0; mesh_idx < ai_node->mNumMeshes; ++mesh_idx)
         {
-            const aiFace& face = mesh->mFaces[i];
-            CHECK(face.mNumIndices == 3);
-            indices.push_back(face.mIndices[0]);
-            indices.push_back(face.mIndices[1]);
-            indices.push_back(face.mIndices[2]);
+            aiMesh* ai_mesh = ai_scene->mMeshes[ai_node->mMeshes[mesh_idx]];
+
+            uint32 num_mesh_indices = 0;
+            for (uint32 i = 0; i < ai_mesh->mNumFaces; ++i)
+            {
+                const aiFace& face = ai_mesh->mFaces[i];
+                CHECK(face.mNumIndices == 3);
+                vertex_data.indices.push_back(num_model_vertices + face.mIndices[0]);
+                vertex_data.indices.push_back(num_model_vertices + face.mIndices[1]);
+                vertex_data.indices.push_back(num_model_vertices + face.mIndices[2]);
+                num_mesh_indices += 3;
+            }
+
+            num_model_indices += num_mesh_indices;
+
+            for (uint32 vertex_id = 0; vertex_id < ai_mesh->mNumVertices; ++vertex_id)
+            {
+                const aiVector3D& vertex = ai_mesh->mVertices[vertex_id];
+                vertex_data.pos.push_back({ vertex.x, vertex.y, vertex.z });
+
+                const aiVector3D& normal = ai_mesh->HasNormals() ? ai_mesh->mNormals[vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
+                vertex_data.normals.push_back({ normal.x, normal.y, normal.z });
+
+                const aiVector3D& uv = ai_mesh->HasTextureCoords(0) ? ai_mesh->mTextureCoords[0][vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
+                vertex_data.uvs.push_back({ uv.x, uv.y });
+
+                num_model_vertices++;
+            }
+
+            StaticMesh mesh;
+            mesh.start_idx = num_model_indices - num_mesh_indices;
+            mesh.offset = 0;
+            mesh.num_indices = num_mesh_indices;
+            mesh.material_slot = ai_mesh->mMaterialIndex;
+            model->meshes_.push_back(mesh);
+        }
+
+        for(uint32 i=0; i< ai_node->mNumChildren; ++i)
+        {
+            nodes.push_back(ai_node->mChildren[i]);
         }
     }
 
-    mesh_data->pos = MakeShared<VertexBuffer>(pos.data(), (uint32)pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
-    mesh_data->normals = MakeShared<VertexBuffer>(normals.data(), (uint32)normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
-    mesh_data->uv = MakeShared<VertexBuffer>(uvs.data(), (uint32)uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
-    mesh_data->index_buffer = MakeShared<IndexBuffer>(indices.data(), (uint32)indices.size());
-    return mesh_data;
+    //std::vector<CubeMeshData> cubes;
+    //cubes.push_back(CubeMeshData());
+    //cubes.push_back(CubeMeshData());
+
+    //for(Vec3& p : cubes[1].vertex_pos)
+    //{
+    //    p = p - Vec3(-5.0f, -0.0f, 0.0f);
+    //}
+
+    //for (uint32 mesh_idx = 0; mesh_idx < cubes.size(); ++mesh_idx)
+    //{
+    //    CubeMeshData* ai_mesh = &cubes[mesh_idx];
+
+    //    uint32 num_mesh_indices = 0;
+    //    for (auto idx : ai_mesh->vertex_indices)
+    //    {
+    //        vertex_data.indices.push_back(num_model_vertices + idx);
+    //        num_mesh_indices++;
+    //    }
+    //    num_model_indices += num_mesh_indices;
+
+    //    for (uint32 vertex_id = 0; vertex_id < ai_mesh->vertex_pos.size(); ++vertex_id)
+    //    {
+    //        auto vertex = ai_mesh->vertex_pos[vertex_id];
+    //        vertex_data.pos.push_back({ vertex.x, vertex.y, vertex.z });
+
+    //        auto normal = ai_mesh->vertex_normals[vertex_id];
+    //        vertex_data.normals.push_back({ normal.x, normal.y, normal.z });
+
+    //        auto uv = ai_mesh->vertex_uv[vertex_id];
+    //        vertex_data.uvs.push_back({ uv.x, uv.y });
+
+    //        num_model_vertices++;
+    //    }
+
+    //    StaticMesh mesh;
+    //    mesh.start_idx = num_model_indices - num_mesh_indices;
+    //    mesh.offset = 0;
+    //    mesh.num_indices = num_mesh_indices;
+    //    mesh.material_slot = mesh_idx;
+    //    model->meshes_.push_back(mesh);
+    //}
+
+    model->index_buffer = MakeShared<IndexBuffer>(vertex_data.indices.data(), (uint32)vertex_data.indices.size());
+    SetDebugName(model->index_buffer->GetNativePtr().Get(), desc.path + " index");
+    model->pos = MakeShared<VertexBuffer>(vertex_data.pos.data(), (uint32)vertex_data.pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
+    SetDebugName(model->pos->GetNativePtr().Get(), desc.path + " pos");
+    model->normals = MakeShared<VertexBuffer>(vertex_data.normals.data(), (uint32)vertex_data.normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
+    SetDebugName(model->normals->GetNativePtr().Get(), desc.path + " normals");
+    model->uv = MakeShared<VertexBuffer>(vertex_data.uvs.data(), (uint32)vertex_data.uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
+    SetDebugName(model->uv->GetNativePtr().Get(), desc.path + " uv0");
+
+    for(StaticMesh& mesh : model->meshes_)
+    {
+        mesh.index_buffer = model->index_buffer;
+        mesh.pos = model->pos;
+        mesh.normals = model->normals;
+        mesh.uv = model->uv;
+    }
+
+    aiVector3t<float> scaling;
+    aiVector3t<float> rot_axis;
+    float rot_angle;
+    aiVector3t<float> pos;
+    ai_scene->mRootNode->mTransformation.Decompose(scaling, rot_axis, rot_angle, pos);
+    Transform t({ scaling.x, scaling.y, scaling.z }, Quat::FromAxisAngle({ rot_axis.x, rot_axis.y, rot_axis.z }, rot_angle), { pos.x, pos.y, pos.z });
+    model->transform_ = desc.correction_transform;
+
+    return model;
 }
 
-void MeshData::Bind()
+void Model::Bind()
 {
     index_buffer->Bind();
     pos->Bind();
@@ -65,32 +195,11 @@ void MeshData::Bind()
     normals->Bind();
 }
 
-void Mesh::Render()
-{
-    CHECK(mesh_data_ != nullptr);
-    
-    CHECK(material_.IsValid());
-    Material* material_ptr = gfx::resource_manager->Get(material_);
-
-    if(material_ptr->texture_parameters_["tex"].tex.IsValid())
-    {
-        Bind();
-        gfx::device_context->DrawIndexed(mesh_data_->index_buffer->GetNum(), 0 /*start idx*/, 0 /*idx offset*/);
-    }
-}
-
-void Mesh::Bind()
+void Model::Render()
 {
     gfx::device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-    CHECK(material_.IsValid());
-    Material* material_ptr = gfx::resource_manager->Get(material_);
-    material_ptr->Bind();
-
-    CHECK(mesh_data_ != nullptr);
-    mesh_data_->Bind();
-
-    if(cbuffer_per_object_ == nullptr)
+    if (cbuffer_per_object_ == nullptr)
     {
         D3D11_BUFFER_DESC cbuffer_desc = {};
         cbuffer_desc.Usage = D3D11_USAGE_DEFAULT;   // Read / Write access
@@ -100,135 +209,21 @@ void Mesh::Bind()
         DX11_VERIFY(gfx::device->CreateBuffer(&cbuffer_desc, nullptr, &cbuffer_per_object_));
     }
 
+    per_object_data_.mat_world = transform_.GetWorldMatrix().Transpose();
     gfx::device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
 
     static constexpr int CBUFFER_PER_OBJECT_SLOT = 1;
     gfx::device_context->VSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
     gfx::device_context->PSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
-}
 
-void Mesh::Update(float dt)
-{
-    Quat rot = transform_.GetWorldRotation() * Quat::FromAxisAngle(Vec3::UP, MathUtils::DegToRad(25.0f) * dt);
-    rot.Normalize();
-    transform_.SetWorldRotation(rot);
-    per_object_data_.mat_world = transform_.GetWorldMatrix().Transpose();
-}
+    Bind();
 
-SharedPtr<Model> Model::LoadFromFile(const std::string& asset_path)
-{
-    LOG("Loading model: {}", asset_path);
-    
-    SharedPtr<Model> model = MakeShared<Model>();
-    
-    model->source_path_ = std::filesystem::path(asset_path).parent_path();
-
-    Assimp::Importer ai_importer;
-    uint32 importer_flags = aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast;
-    const aiScene* ai_scene = ai_importer.ReadFile(asset_path, importer_flags);
-    CHECK_MSG(ai_scene != nullptr, "Failed to load mesh from file: {}. \n Error: {}", asset_path, ai_importer.GetErrorString());
-
-    // Scene graph traversal to generate sub meshes
-    Model::ProcessNode(ai_scene, ai_scene->mRootNode, model);
-
-    aiVector3t<float> scaling;
-    aiVector3t<float> rot_axis;
-    float rot_angle;
-    aiVector3t<float> pos;
-    ai_scene->mRootNode->mTransformation.Decompose(scaling, rot_axis, rot_angle, pos);
-
-    Transform t({ scaling.x, scaling.y, scaling.z }, Quat::FromAxisAngle({ rot_axis.x, rot_axis.y, rot_axis.z }, rot_angle), { pos.x, pos.y, pos.z });
-    model->SetTransform(t);
-
-    return model;
-}
-
-void Model::ProcessNode(const aiScene* scene, const aiNode* node, const SharedPtr<Model> model)
-{
-    for (uint32 i = 0; i < node->mNumMeshes; ++i)
+    for (size_t i = 0; i < meshes_.size(); ++i)
     {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        Model::ProcessMesh(scene, node, mesh, model);
-    }
-
-    for (uint32 i = 0; i < node->mNumChildren; ++i)
-    {
-        ProcessNode(scene, node->mChildren[i], model);
-    }
-}
-
-void Model::ProcessMesh(const aiScene* ai_scene, const aiNode* ai_node, const aiMesh* ai_mesh, const SharedPtr<Model> model)
-{
-    CHECK(ai_scene != nullptr);
-    CHECK(ai_node != nullptr);
-    CHECK(ai_mesh != nullptr);
-    CHECK(model != nullptr);
-
-    SharedPtr<Mesh> mesh = MakeShared<Mesh>();
-    mesh->name_ = std::string(ai_mesh->mName.C_Str());
-
-    SharedPtr<MeshData> mesh_data = MakeShared<MeshData>();
-    std::vector<uint16> indices;
-    std::vector<Vec3> pos;
-    std::vector<Vec3> normals;
-    std::vector<Vec2> uvs;
-
-    // Vertex Buffer data
-    for (uint32 vertex_id = 0; vertex_id < ai_mesh->mNumVertices; ++vertex_id)
-    {
-        const aiVector3D& vertex = ai_mesh->mVertices[vertex_id];
-        pos.push_back({ vertex.x, vertex.y, vertex.z });
-
-        const aiVector3D& normal = ai_mesh->HasNormals() ? ai_mesh->mNormals[vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
-        normals.push_back({ normal.x, normal.y, normal.z });
-
-        const aiVector3D& uv = ai_mesh->HasTextureCoords(0) ? ai_mesh->mTextureCoords[0][vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
-        uvs.push_back({ uv.x, uv.y });
-    }
-    mesh_data->pos = MakeShared<VertexBuffer>(pos.data(), (uint32)pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
-    SetDebugName(mesh_data->pos->vertex_buffer_.Get(), model->source_path_.string() + " " + mesh->name_ + " pos");
-    mesh_data->normals = MakeShared<VertexBuffer>(normals.data(), (uint32)normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
-    SetDebugName(mesh_data->normals->vertex_buffer_.Get(), model->source_path_.string() + " " + mesh->name_ + " normals");
-    mesh_data->uv = MakeShared<VertexBuffer>(uvs.data(), (uint32)uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
-    SetDebugName(mesh_data->uv->vertex_buffer_.Get(), model->source_path_.string() + " " + mesh->name_ + " uvs");
-
-    // Index Buffer data
-    for (uint32 i = 0; i < ai_mesh->mNumFaces; ++i)
-    {
-        const aiFace& face = ai_mesh->mFaces[i];
-        CHECK(face.mNumIndices == 3);
-        indices.push_back(face.mIndices[0]);
-        indices.push_back(face.mIndices[1]);
-        indices.push_back(face.mIndices[2]);
-    }
-    mesh_data->index_buffer = MakeShared<IndexBuffer>(indices.data(), (uint32)indices.size());
-    SetDebugName(mesh_data->index_buffer->index_buffer_.Get(), model->source_path_.string() + " " + mesh->name_ + " indices");
-    
-    mesh->mesh_data_ = mesh_data;
-
-    // Material data
-    MaterialDesc mat_desc_textured
-    {
-        .vs_path = "assets/shaders/unlit_textured.vs.hlsl",
-        .ps_path = "assets/shaders/unlit_textured.ps.hlsl",
-        .rasterizer_state = RasterizerState::CULL_CCW,
-        .blend_state = BlendState::BLEND_OPAQUE,
-        .depth_stencil_state = DepthStencilState::DEFAULT
-    };
-    Handle<Material> mat_handle = gfx::resource_manager->CreateOrGet(mat_desc_textured);
-    Material* mat = gfx::resource_manager->Get(mat_handle);
-    CHECK(mat != nullptr);
-
-    aiMaterial* ai_material = ai_scene->mMaterials[ai_mesh->mMaterialIndex];
-    aiString diffuse_tex_path;    //contains filename of texture
-    if (ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &diffuse_tex_path) == AI_SUCCESS &&
-        diffuse_tex_path.C_Str() != "")
-    {
-        std::filesystem::path tex_path = model->source_path_ / std::filesystem::path(diffuse_tex_path.C_Str());
-        Handle<Texture> tex = gfx::resource_manager->CreateOrGet(TextureDesc{ tex_path.string() });
-
-        mat->SetTexture("tex", tex);
-        mesh->material_ = mat_handle;
-        model->submeshes_.push_back(mesh);
+        auto mesh = meshes_[i];
+        Handle<Material> mat_handle = materials_[mesh.material_slot];
+        auto material = gfx::resource_manager->Get(mat_handle);
+        material->Bind();
+        mesh.Render();
     }
 }

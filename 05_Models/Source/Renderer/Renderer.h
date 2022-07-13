@@ -34,8 +34,6 @@ public:
     virtual void Render() override;
 
 private:
-    static MeshData LoadModel(const std::string& asset_path);
-
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
 
@@ -48,7 +46,6 @@ private:
 
     // Scene
     SharedPtr<Model> model_;
-    SharedPtr<Mesh> mesh_;
 
     // General render settings
     float clear_color_[4] = { 100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f, 255.0f / 255.0f };

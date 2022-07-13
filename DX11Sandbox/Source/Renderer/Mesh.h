@@ -10,227 +10,183 @@ struct aiScene;
 struct aiNode;
 struct aiMesh;
 
-struct MeshData
-{
-    void Bind();
+struct VertexData {
+    std::vector<uint16> indices;
+    std::vector<Vec3> pos;
+    std::vector<Vec3> normals;
+    std::vector<Vec2> uvs;
+};
 
-    static SharedPtr<MeshData> LoadFromFile(const std::string& asset_path);
-    
+struct CubeMeshData
+{
+    std::vector<uint16> vertex_indices = {
+        // front
+        0,  1,  2,
+        0,  2,  3,
+        // back
+        4,  5,  6,
+        4,  6,  7,
+        // top
+        8,  9, 10,
+        8, 10, 11,
+        // bottom
+        12, 13, 14,
+        12, 14, 15,
+        // left
+        16, 17, 18,
+        16, 18, 19,
+        // right
+        20, 21, 22,
+        20, 22, 23
+    };
+
+    std::vector<Vec3> vertex_pos =
+    {
+        // front
+        Vec3(-1.0f, -1.0f,  -1.0f),
+        Vec3(-1.0f,  1.0f,  -1.0f),
+        Vec3(1.0f,  1.0f,   -1.0f),
+        Vec3(1.0f, -1.0f,   -1.0f),
+        // back
+        Vec3(-1.0f, -1.0f, 1.0f),
+        Vec3(1.0f, -1.0f, 1.0f), 
+        Vec3(1.0f,  1.0f, 1.0f), 
+        Vec3(-1.0f,  1.0f, 1.0f),
+        // top
+        Vec3(-1.0f, 1.0f, -1.0f),
+        Vec3(-1.0f, 1.0f,  1.0f),
+        Vec3(1.0f, 1.0f,  1.0f), 
+        Vec3(1.0f, 1.0f, -1.0f), 
+        // bottom
+        Vec3(-1.0f, -1.0f, -1.0f),
+        Vec3(1.0f, -1.0f, -1.0f), 
+        Vec3(1.0f, -1.0f,  1.0f), 
+        Vec3(-1.0f, -1.0f,  1.0f),
+        // left
+        Vec3(-1.0f, -1.0f,  1.0f),
+        Vec3(-1.0f,  1.0f,  1.0f),
+        Vec3(-1.0f,  1.0f, -1.0f),
+        Vec3(-1.0f, -1.0f, -1.0f),
+        // right
+        Vec3(1.0f, -1.0f, -1.0f),
+        Vec3(1.0f,  1.0f, -1.0f),
+        Vec3(1.0f,  1.0f,  1.0f),
+        Vec3(1.0f, -1.0f,  1.0f)
+    };
+
+    std::vector<Vec3> vertex_normals =
+    {
+        // TODO: Set proper normals
+
+        // front
+        Vec3(-1.0f, -1.0f,  -1.0f),
+        Vec3(-1.0f,  1.0f,  -1.0f),
+        Vec3(1.0f,  1.0f,   -1.0f),
+        Vec3(1.0f, -1.0f,   -1.0f),
+        // back
+        Vec3(-1.0f, -1.0f, 1.0f),
+        Vec3(1.0f, -1.0f, 1.0f),
+        Vec3(1.0f,  1.0f, 1.0f),
+        Vec3(-1.0f,  1.0f, 1.0f),
+        // top
+        Vec3(-1.0f, 1.0f, -1.0f),
+        Vec3(-1.0f, 1.0f,  1.0f),
+        Vec3(1.0f, 1.0f,  1.0f),
+        Vec3(1.0f, 1.0f, -1.0f),
+        // bottom
+        Vec3(-1.0f, -1.0f, -1.0f),
+        Vec3(1.0f, -1.0f, -1.0f),
+        Vec3(1.0f, -1.0f,  1.0f),
+        Vec3(-1.0f, -1.0f,  1.0f),
+        // left
+        Vec3(-1.0f, -1.0f,  1.0f),
+        Vec3(-1.0f,  1.0f,  1.0f),
+        Vec3(-1.0f,  1.0f, -1.0f),
+        Vec3(-1.0f, -1.0f, -1.0f),
+        // right
+        Vec3(1.0f, -1.0f, -1.0f),
+        Vec3(1.0f,  1.0f, -1.0f),
+        Vec3(1.0f,  1.0f,  1.0f),
+        Vec3(1.0f, -1.0f,  1.0f)
+    };
+
+    std::vector<Vec2> vertex_uv =
+    {
+        // front
+        Vec2(0.0f, 1.0f),
+        Vec2(0.0f, 0.0f),
+        Vec2(1.0f, 0.0f),
+        Vec2(1.0f, 1.0f),
+        // back
+        Vec2(1.0f, 1.0f),
+        Vec2(0.0f, 1.0f),
+        Vec2(0.0f, 0.0f),
+        Vec2(1.0f, 0.0f),
+        // top
+        Vec2(0.0f, 1.0f),
+        Vec2(0.0f, 0.0f),
+        Vec2(1.0f, 0.0f),
+        Vec2(1.0f, 1.0f),
+        // botttom
+        Vec2(1.0f, 1.0f),
+        Vec2(0.0f, 1.0f),
+        Vec2(0.0f, 0.0f),
+        Vec2(1.0f, 0.0f),
+        // left
+        Vec2(0.0f, 1.0f),
+        Vec2(0.0f, 0.0f),
+        Vec2(1.0f, 0.0f),
+        Vec2(1.0f, 1.0f),
+        // right
+        Vec2(0.0f, 1.0f),
+        Vec2(0.0f, 0.0f),
+        Vec2(1.0f, 0.0f),
+        Vec2(1.0f, 1.0f)
+    };
+};
+
+struct StaticMesh
+{
+    void Bind() const;
+    void Render() const;
+
+    uint32 start_idx = 0;
+    uint32 num_indices = 0;
+    uint32 offset = 0;
+    uint32 material_slot = 0;
+
     SharedPtr<IndexBuffer> index_buffer;
     SharedPtr<VertexBuffer> pos;
     SharedPtr<VertexBuffer> uv;
     SharedPtr<VertexBuffer> normals;
 };
 
-struct CubeMeshData : public MeshData
+struct Model
 {
-    CubeMeshData()
-    {
-        std::vector<uint16> vertex_indices = {
-            // front
-            0,  1,  2,
-            0,  2,  3,
-            // back
-            4,  5,  6,
-            4,  6,  7,
-            // top
-            8,  9, 10,
-            8, 10, 11,
-            // bottom
-            12, 13, 14,
-            12, 14, 15,
-            // left
-            16, 17, 18,
-            16, 18, 19,
-            // right
-            20, 21, 22,
-            20, 22, 23
-        };
-
-        std::vector<Vec3> vertex_pos =
-        {
-            // front
-            Vec3(-1.0f, -1.0f,  -1.0f),
-            Vec3(-1.0f,  1.0f,  -1.0f),
-            Vec3(1.0f,  1.0f,   -1.0f),
-            Vec3(1.0f, -1.0f,   -1.0f),
-            // back
-            Vec3(-1.0f, -1.0f, 1.0f),
-            Vec3(1.0f, -1.0f, 1.0f), 
-            Vec3(1.0f,  1.0f, 1.0f), 
-            Vec3(-1.0f,  1.0f, 1.0f),
-            // top
-            Vec3(-1.0f, 1.0f, -1.0f),
-            Vec3(-1.0f, 1.0f,  1.0f),
-            Vec3(1.0f, 1.0f,  1.0f), 
-            Vec3(1.0f, 1.0f, -1.0f), 
-            // bottom
-            Vec3(-1.0f, -1.0f, -1.0f),
-            Vec3(1.0f, -1.0f, -1.0f), 
-            Vec3(1.0f, -1.0f,  1.0f), 
-            Vec3(-1.0f, -1.0f,  1.0f),
-            // left
-            Vec3(-1.0f, -1.0f,  1.0f),
-            Vec3(-1.0f,  1.0f,  1.0f),
-            Vec3(-1.0f,  1.0f, -1.0f),
-            Vec3(-1.0f, -1.0f, -1.0f),
-            // right
-            Vec3(1.0f, -1.0f, -1.0f),
-            Vec3(1.0f,  1.0f, -1.0f),
-            Vec3(1.0f,  1.0f,  1.0f),
-            Vec3(1.0f, -1.0f,  1.0f)
-        };
-
-        std::vector<Vec3> vertex_normals =
-        {
-            // TODO: Set proper normals
-
-            // front
-            Vec3(-1.0f, -1.0f,  -1.0f),
-            Vec3(-1.0f,  1.0f,  -1.0f),
-            Vec3(1.0f,  1.0f,   -1.0f),
-            Vec3(1.0f, -1.0f,   -1.0f),
-            // back
-            Vec3(-1.0f, -1.0f, 1.0f),
-            Vec3(1.0f, -1.0f, 1.0f),
-            Vec3(1.0f,  1.0f, 1.0f),
-            Vec3(-1.0f,  1.0f, 1.0f),
-            // top
-            Vec3(-1.0f, 1.0f, -1.0f),
-            Vec3(-1.0f, 1.0f,  1.0f),
-            Vec3(1.0f, 1.0f,  1.0f),
-            Vec3(1.0f, 1.0f, -1.0f),
-            // bottom
-            Vec3(-1.0f, -1.0f, -1.0f),
-            Vec3(1.0f, -1.0f, -1.0f),
-            Vec3(1.0f, -1.0f,  1.0f),
-            Vec3(-1.0f, -1.0f,  1.0f),
-            // left
-            Vec3(-1.0f, -1.0f,  1.0f),
-            Vec3(-1.0f,  1.0f,  1.0f),
-            Vec3(-1.0f,  1.0f, -1.0f),
-            Vec3(-1.0f, -1.0f, -1.0f),
-            // right
-            Vec3(1.0f, -1.0f, -1.0f),
-            Vec3(1.0f,  1.0f, -1.0f),
-            Vec3(1.0f,  1.0f,  1.0f),
-            Vec3(1.0f, -1.0f,  1.0f)
-        };
-
-        std::vector<Vec2> vertex_uv =
-        {
-            // front
-            Vec2(0.0f, 1.0f),
-            Vec2(0.0f, 0.0f),
-            Vec2(1.0f, 0.0f),
-            Vec2(1.0f, 1.0f),
-            // back
-            Vec2(1.0f, 1.0f),
-            Vec2(0.0f, 1.0f),
-            Vec2(0.0f, 0.0f),
-            Vec2(1.0f, 0.0f),
-            // top
-            Vec2(0.0f, 1.0f),
-            Vec2(0.0f, 0.0f),
-            Vec2(1.0f, 0.0f),
-            Vec2(1.0f, 1.0f),
-            // botttom
-            Vec2(1.0f, 1.0f),
-            Vec2(0.0f, 1.0f),
-            Vec2(0.0f, 0.0f),
-            Vec2(1.0f, 0.0f),
-            // left
-            Vec2(0.0f, 1.0f),
-            Vec2(0.0f, 0.0f),
-            Vec2(1.0f, 0.0f),
-            Vec2(1.0f, 1.0f),
-            // right
-            Vec2(0.0f, 1.0f),
-            Vec2(0.0f, 0.0f),
-            Vec2(1.0f, 0.0f),
-            Vec2(1.0f, 1.0f)
-        };
-
-        index_buffer = MakeShared<IndexBuffer>(vertex_indices.data(), (uint32)vertex_indices.size());
-        pos = MakeShared<VertexBuffer>(vertex_pos.data(), (uint32)vertex_pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
-        normals = MakeShared<VertexBuffer>(vertex_normals.data(), (uint32)vertex_normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
-        uv = MakeShared<VertexBuffer>(vertex_uv.data(), (uint32)vertex_uv.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
-    }
-};
-
-struct Mesh
-{
-    Mesh() = default;
-    ~Mesh() = default;
-
-    void Update(float dt);
+    void Bind();
     void Render();
 
-    void Bind();
-
-    float rotation_angle_ = 0.0f;
     Transform transform_;
-
-    SharedPtr<MeshData> mesh_data_;
-    Handle<Material> material_;
-
     CBufferPerObject per_object_data_;
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr;
 
-    std::string name_;
+    std::vector<Handle<Material>> materials_;
+    std::vector<StaticMesh> meshes_;
+
+    SharedPtr<IndexBuffer> index_buffer;
+    SharedPtr<VertexBuffer> pos;
+    SharedPtr<VertexBuffer> uv;
+    SharedPtr<VertexBuffer> normals;
 };
 
-struct Model
+struct ModelDescription
 {
-    Model() = default;
-    ~Model() = default;
+    String path;
+    Transform correction_transform;
+};
 
-    static SharedPtr<Model> LoadFromFile(const std::string& asset_path);
-    static void ProcessNode(const aiScene* scene, const aiNode* node, const SharedPtr<Model> model);
-    static void ProcessMesh(const aiScene* scene, const aiNode* node, const aiMesh* mesh, const SharedPtr<Model> model);
-
-    void Update(float dt) 
-    {
-        for (const auto& mesh : submeshes_)
-        {
-            mesh->Update(dt);
-        }
-    };
-
-    void Render()
-    {
-        for(const auto& mesh : submeshes_)
-        {
-            // TODO: Split between opaque and transparent render passes
-            // TODO: Batch meshes with same material to minimize state changes
-            mesh->Render();
-        }
-    }
-
-    void SetTransform(const Transform& transform)
-    {
-        transform_ = transform;
-        for (const auto& mesh : submeshes_)
-        {
-            mesh->transform_ = transform;
-        }
-    }
-
-    void SetTranslation(const Vec3& v)
-    {
-        transform_.SetWorldTranslation(v);
-        SetTransform(transform_);
-    }
-
-    void SetScaling(const Vec3& v)
-    {
-        transform_.SetWorldScaling(v);
-        SetTransform(transform_);
-    }
-
-    Transform transform_;
-
-    std::vector<SharedPtr<Mesh>> submeshes_;
-
-    std::filesystem::path source_path_;
+class ModelImporter
+{
+public:
+    static SharedPtr<Model> LoadFromFile(const ModelDescription& desc);
 };
