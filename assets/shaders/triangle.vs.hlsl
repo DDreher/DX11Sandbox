@@ -10,7 +10,6 @@ struct VSOutput
     float4 color : COLOR0;
 };
 
-
 VSOutput Main(VSInput input)
 {
     VSOutput output;

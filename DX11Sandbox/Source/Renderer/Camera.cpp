@@ -1,17 +1,20 @@
 #include "Camera.h"
 
+#include "Engine/Input.h"
+
 Camera::Camera(Vec3 pos, float aspect_ratio, float fov, float near_clip, float far_clip)
     : pos_(pos), aspect_ratio_(aspect_ratio), fov_(fov), near_clip_(near_clip), far_clip_(far_clip)
 {
     Vec3 target = { 0.0f, 0.0f, 0.0f };
     LookAt(target);
-    view_ = Mat4::LookAt(pos_, target, up_);
     UpdateMatrices();
 }
 
 void Camera::LookAt(Vec3 target)
 {
-    SetView(Mat4::LookAt(pos_, target, up_));
+    forward_ = target - pos_;
+    right_ = Vec3::Cross(Vec3::UP, forward_);
+    is_view_dirty_ = true;
 }
 
 void Camera::SetNearClip(float z)
@@ -36,7 +39,7 @@ const Mat4& Camera::GetProjection()
 {
     if(is_projection_dirty_)
     {
-        UpdateProjection();
+        RecalculateProjection();
     }
 
     return projection_;
@@ -51,7 +54,7 @@ const Mat4& Camera::GetView()
 {
     if (is_view_dirty_)
     {
-        UpdateView();
+        RecalculateView();
     }
 
     return view_;
@@ -77,28 +80,86 @@ void Camera::UpdateMatrices()
 {
     bool is_vp_dirty = is_view_dirty_ || is_projection_dirty_;
 
-    UpdateProjection();
-    UpdateView();
+    RecalculateProjection();
+    RecalculateView();
 
     if(is_vp_dirty)
     {
-        UpdateViewProjection();
+        RecalculateViewProjection();
     }
 }
 
-void Camera::UpdateProjection()
+void Camera::Update(float dt)
+{
+    if(input::IsButtonDown(input::Button::MOUSE_RIGHT) == false)
+    {
+        input::SetCursorVisibility(true);
+        return;
+    }
+
+    input::SetCursorVisibility(false);
+
+    // Update rotation
+    constexpr float rotation_velocity = 0.005f;
+    Vec2 mouse_delta = input::GetMousePosDelta();
+    if(mouse_delta.x != 0.0f || mouse_delta.y != 0.0f)
+    {
+        float pitch_delta = mouse_delta.y * rotation_velocity;
+        float yaw_delta = mouse_delta.x * rotation_velocity;
+
+        Quat rot_pitch = Quat::FromAxisAngle(right_, pitch_delta);
+        Quat rot_yaw = Quat::FromAxisAngle(Vec3::UP, yaw_delta);
+        Quat rot_combined = Quat::Normalize(rot_pitch * rot_yaw);
+
+        forward_ = Vec3::Transform(forward_, rot_combined);
+        right_ = Vec3::Cross(Vec3::UP, forward_);
+        is_view_dirty_ = true;
+    }
+
+    // Update translation
+    constexpr float max_translation_velocity = 0.2f;
+    Vec3 movement_dir = Vec3::ZERO;
+    if (input::IsKeyDown(SDL_KeyCode::SDLK_w))
+    {
+        movement_dir.z = 1.0f;
+    }
+    else if (input::IsKeyDown(SDL_KeyCode::SDLK_s))
+    {
+        movement_dir.z = -1.0f;
+    }
+
+    if (input::IsKeyDown(SDL_KeyCode::SDLK_d))
+    {
+        movement_dir.x = 1.0f;
+    }
+    else if (input::IsKeyDown(SDL_KeyCode::SDLK_a))
+    {
+        movement_dir.x = -1.0f;
+    }
+
+    if (movement_dir != Vec3::ZERO)
+    {
+        pos_ = pos_ + dt * max_translation_velocity * movement_dir.z * forward_;
+        pos_ = pos_ + dt * max_translation_velocity * movement_dir.x * right_;
+        SetPosition(pos_);
+    }
+
+    UpdateMatrices();
+}
+
+void Camera::RecalculateProjection()
 {
     projection_ = Mat4::PerspectiveFovLH(fov_, aspect_ratio_, near_clip_, far_clip_);
     is_projection_dirty_ = false;
 }
 
-void Camera::UpdateView()
+void Camera::RecalculateView()
 {
-    // TODO: Maybe we want to automatically track a target at some point...?
+    SetView(Mat4::LookAt(pos_, pos_+forward_, up_));
     is_view_dirty_ = false;
 }
 
-void Camera::UpdateViewProjection()
+void Camera::RecalculateViewProjection()
 {
     view_projection_ = view_ * projection_;
 }

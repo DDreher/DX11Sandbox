@@ -2,21 +2,24 @@
 #include <d3d11.h>
 #include "DX11Types.h"
 
-struct GraphicsContext;
-
 enum class BlendState : uint8
 {
-    BLEND_OPAQUE = 0,
-    BLEND_PREMULTIPLIED_ALPHA,
-    BLEND_NONPREMULTIPLIED_ALPHA,
-    BLEND_ADDITIVE
+    Opaque,
+    PremultipliedAlpha,
+    NonPremultipliedAlpha,
+    Additive,
+    Invalid
 };
 
-MAKE_HASHABLE(D3D11_BLEND_DESC);
+MAKE_HASHABLE(D3D11_BLEND_DESC, t.AlphaToCoverageEnable, t.IndependentBlendEnable);
 
 inline bool operator==(const D3D11_BLEND_DESC& lhs, const D3D11_BLEND_DESC& rhs)
 {
-    bool result = false;
+    bool result = true;
+
+    result = result &&
+        lhs.AlphaToCoverageEnable == rhs.AlphaToCoverageEnable &&
+        lhs.IndependentBlendEnable == rhs.IndependentBlendEnable;
 
     for (size_t i = 0; i < 8; i++)
     {
@@ -29,21 +32,23 @@ inline bool operator==(const D3D11_BLEND_DESC& lhs, const D3D11_BLEND_DESC& rhs)
             lhs.RenderTarget[i].RenderTargetWriteMask == rhs.RenderTarget[i].RenderTargetWriteMask &&
             lhs.RenderTarget[i].SrcBlend == rhs.RenderTarget[i].SrcBlend &&
             lhs.RenderTarget[i].SrcBlendAlpha == rhs.RenderTarget[i].SrcBlendAlpha;
-    }
 
-    result = result &&
-        lhs.AlphaToCoverageEnable == rhs.AlphaToCoverageEnable &&
-        lhs.IndependentBlendEnable == rhs.IndependentBlendEnable;
+        if(result == false)
+        {
+            break;
+        }
+    }
 
     return result;
 }
 
 enum class RasterizerState : uint8
 {
-    WIREFRAME = 0,
-    CULL_NONE,
-    CULL_CW,
-    CULL_CCW
+    Wireframe = 0,
+    CullNone,
+    CullClockwise,
+    CullCounterClockwise,
+    Invalid
 };
 
 MAKE_HASHABLE(D3D11_RASTERIZER_DESC);
@@ -65,10 +70,10 @@ inline bool operator==(const D3D11_RASTERIZER_DESC& lhs, const D3D11_RASTERIZER_
 
 enum class SamplerState : uint8
 {
-    POINT_CLAMP = 0,
-    POINT_WRAP,
-    LINEAR_CLAMP,
-    LINEAR_WRAP
+    PointClamp = 0,
+    PointWrap,
+    LinearClamp,
+    LinearWrap
 };
 MAKE_HASHABLE(D3D11_SAMPLER_DESC);
 
@@ -93,7 +98,8 @@ inline bool operator==(const D3D11_SAMPLER_DESC& lhs, const D3D11_SAMPLER_DESC& 
 
 enum class DepthStencilState : uint8
 {
-    DEFAULT
+    Default,
+    Invalid
 };
 MAKE_HASHABLE(D3D11_DEPTH_STENCIL_DESC);
 
@@ -108,7 +114,7 @@ inline bool operator==(const D3D11_DEPTH_STENCIL_DESC& lhs, const D3D11_DEPTH_ST
 class RenderStateCache
 {
 public:
-    RenderStateCache(GraphicsContext* context);
+    RenderStateCache();
     ~RenderStateCache();
 
     ComPtr<ID3D11BlendState> GetBlendState(const D3D11_BLEND_DESC& desc);
@@ -126,8 +132,6 @@ private:
     void InitCommonRasterizerStates();
     void InitCommonDepthStencilStates();
     void InitCommonSamplerStates();
-
-    GraphicsContext* context_ = nullptr;
 
     std::unordered_map<BlendState, D3D11_BLEND_DESC> common_blend_state_descriptors_;
     std::unordered_map<D3D11_BLEND_DESC, ComPtr<ID3D11BlendState>> blend_state_cache_;

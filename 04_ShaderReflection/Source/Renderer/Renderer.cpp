@@ -6,6 +6,10 @@
 #include <dxgi1_3.h>
 #endif
 
+#include "assimp/Importer.hpp"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
+
 #include "imgui.h"
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_sdl.h"
@@ -15,140 +19,198 @@
 #include "Renderer/Texture.h"
 #include "Renderer/Vertex.h"
 
-Renderer::Renderer(Window* window)
+SharedPtr<MeshData> MeshData::LoadFromFile(const std::string& asset_path)
 {
-    CHECK(window != nullptr);
-    const HWND hwnd = static_cast<HWND>(window->GetHandle());
-    CHECK(hwnd != nullptr);
+    LOG("Loading mesh: {}", asset_path);
 
-    // Specify swapchain / device requirements
-    DXGI_SWAP_CHAIN_DESC swapchain_desc = {};
-    swapchain_desc.BufferCount = static_cast<UINT>(1);  // Num backbuffers (?) I think this does not include the front buffer
-    swapchain_desc.BufferDesc.Width = static_cast<UINT>(window->GetWidth());
-    swapchain_desc.BufferDesc.Height = static_cast<UINT>(window->GetHeight());
-    swapchain_desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;  // Expected to be normalized to range 0 - 1
-    //swapchain_desc.BufferDesc.RefreshRate = 0; // VSync
-    swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;   // Describes surface usage and CPU access for backbuffer
-    swapchain_desc.SampleDesc.Count = 1;
-    swapchain_desc.SampleDesc.Quality = 0;
-    swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;   // Discard backbuffer content after present
-    swapchain_desc.OutputWindow = hwnd;
-    swapchain_desc.Windowed = TRUE;
+    SharedPtr<MeshData> mesh_data = MakeShared<MeshData>();
 
-    D3D_FEATURE_LEVEL accepted_feature_levels[] =
+    std::vector<uint16> indices;
+    std::vector<Vec3> pos;
+    std::vector<Vec3> normals;
+    std::vector<Vec2> uvs;
+
+    Assimp::Importer importer;
+
+    std::vector<char> bytes = FileIO::ReadFile(asset_path);
+
+    uint32 importer_flags = aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast;
+    const aiScene* scene = importer.ReadFileFromMemory(bytes.data(), bytes.size(), importer_flags);
+    CHECK_MSG(scene != nullptr, "Failed to load mesh from file: {}", asset_path);
+
+    for (uint32 mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx)
     {
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_11_0,
-    };
+        aiMesh* mesh = scene->mMeshes[mesh_idx];
+        for (uint32 vertex_id = 0; vertex_id < mesh->mNumVertices; ++vertex_id)
+        {
+            const aiVector3D& vertex = mesh->mVertices[vertex_id];
+            pos.push_back({ vertex.x, vertex.y, vertex.z });
 
-    D3D_FEATURE_LEVEL device_feature_level;
+            const aiVector3D& normal = mesh->HasNormals() ? mesh->mNormals[vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
+            normals.push_back({ normal.x, normal.y, normal.z });
 
-    uint32 create_device_flags = 0;
-#if _RENDER_DEBUG
-    create_device_flags = D3D11_CREATE_DEVICE_DEBUG; // Enable debug layers
-#endif
+            const aiVector3D& uv = mesh->HasTextureCoords(0) ? mesh->mTextureCoords[0][vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
+            uvs.push_back({ uv.x, uv.y });
+        }
 
-    DX11_VERIFY(D3D11CreateDeviceAndSwapChain(nullptr,
-        D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE,
-        nullptr,
-        create_device_flags,
-        accepted_feature_levels, _countof(accepted_feature_levels),
-        D3D11_SDK_VERSION,
-        &swapchain_desc,
-        &graphics_context_->swapchain,
-        &graphics_context_->device,
-        &device_feature_level,
-        &graphics_context_->device_context));
+        for (uint32 i = 0; i < mesh->mNumFaces; ++i)
+        {
+            const aiFace& face = mesh->mFaces[i];
+            CHECK(face.mNumIndices == 3);
+            indices.push_back(face.mIndices[0]);
+            indices.push_back(face.mIndices[1]);
+            indices.push_back(face.mIndices[2]);
+        }
+    }
 
-    graphics_context_->render_state_cache = MakeUnique<RenderStateCache>(graphics_context_.get());
+    mesh_data->pos = MakeShared<VertexBuffer>(pos.data(), (uint32)pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
+    mesh_data->normals = MakeShared<VertexBuffer>(normals.data(), (uint32)normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
+    mesh_data->uv = MakeShared<VertexBuffer>(uvs.data(), (uint32)uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
+    mesh_data->index_buffer = MakeShared<IndexBuffer>(indices.data(), (uint32)indices.size());
+    return mesh_data;
+}
 
+void MeshData::Bind()
+{
+    index_buffer->Bind();
+    pos->Bind();
+    uv->Bind();
+    normals->Bind();
+}
+
+void Mesh::Update(float dt)
+{
+    Quat rot = transform_.GetWorldRotation() * Quat::FromAxisAngle(Vec3::UP, MathUtils::DegToRad(25.0f) * dt);
+    rot.Normalize();
+    transform_.SetWorldRotation(rot);
+    per_object_data_.mat_world = transform_.GetWorldMatrix().Transpose();
+}
+
+void Mesh::Render()
+{
+    CHECK(mesh_data_ != nullptr);
+    CHECK(material_ != nullptr);
+
+    if (material_->texture_parameters_["tex"].tex.IsValid())
+    {
+        Bind();
+        gfx::device_context->DrawIndexed(mesh_data_->index_buffer->GetNum(), 0 /*start idx*/, 0 /*idx offset*/);
+    }
+}
+
+void Mesh::Bind()
+{
+    gfx::device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+    CHECK(material_ != nullptr);
+    material_->Bind();
+
+    CHECK(mesh_data_ != nullptr);
+    mesh_data_->Bind();
+
+    if (cbuffer_per_object_ == nullptr)
+    {
+        D3D11_BUFFER_DESC cbuffer_desc = {};
+        cbuffer_desc.Usage = D3D11_USAGE_DEFAULT;   // Read / Write access
+        cbuffer_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+        cbuffer_desc.ByteWidth = sizeof(CBufferPerObject);
+        cbuffer_desc.CPUAccessFlags = 0;
+        DX11_VERIFY(gfx::device->CreateBuffer(&cbuffer_desc, nullptr, &cbuffer_per_object_));
+    }
+
+    gfx::device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
+
+    static constexpr int CBUFFER_PER_OBJECT_SLOT = 1;
+    gfx::device_context->VSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
+    gfx::device_context->PSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
+}
+
+Renderer::Renderer()
+{
     // Get render target view from swapchain backbuffer
     // Even with triple buffering we only need a single render target view
     ComPtr<ID3D11Texture2D> backbuffer;
-    DX11_VERIFY(graphics_context_->swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
-    DX11_VERIFY(graphics_context_->device->CreateRenderTargetView(
+    DX11_VERIFY(gfx::swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
+    DX11_VERIFY(gfx::device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
         nullptr,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
         &backbuffer_color_view_));
 
     // Create depth/stencil buffer and view
+    DXGI_SWAP_CHAIN_DESC1 swap_chain_desc;
+    DX11_VERIFY(gfx::swapchain->GetDesc1(&swap_chain_desc));
+
     D3D11_TEXTURE2D_DESC depth_buffer_desc = {};
     depth_buffer_desc.ArraySize = 1;
     depth_buffer_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
     depth_buffer_desc.CPUAccessFlags = 0; // No CPU access
     depth_buffer_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depth_buffer_desc.Width = static_cast<UINT>(window->GetWidth());
-    depth_buffer_desc.Height = static_cast<UINT>(window->GetHeight());
+    depth_buffer_desc.Width = swap_chain_desc.Width;
+    depth_buffer_desc.Height = swap_chain_desc.Height;
     depth_buffer_desc.MipLevels = 1;
     depth_buffer_desc.SampleDesc.Count = 1;
     depth_buffer_desc.SampleDesc.Quality = 0;
     depth_buffer_desc.Usage = D3D11_USAGE_DEFAULT;  // Read and write access by the GPU
 
-    DX11_VERIFY(graphics_context_->device->CreateTexture2D(&depth_buffer_desc,
+    DX11_VERIFY(gfx::device->CreateTexture2D(&depth_buffer_desc,
         nullptr,    // ptr to initial data
         &depth_buffer_));
 
-    DX11_VERIFY(graphics_context_->device->CreateDepthStencilView(depth_buffer_.Get(), nullptr, &backbuffer_depth_view_));
+    DX11_VERIFY(gfx::device->CreateDepthStencilView(depth_buffer_.Get(), nullptr, &backbuffer_depth_view_));
 
     // Configure viewport, i.e. the renderable area
-    viewport_.Width = static_cast<float>(window->GetWidth());
-    viewport_.Height = static_cast<float>(window->GetHeight());
+    viewport_.Width = (float) swap_chain_desc.Width;
+    viewport_.Height = (float) swap_chain_desc.Height;
     viewport_.TopLeftX = 0.0f;
     viewport_.TopLeftY = 0.0f;
     viewport_.MinDepth = 0.0f;
     viewport_.MaxDepth = 1.0f;
-    graphics_context_->device_context->RSSetViewports(1, &viewport_);
+    gfx::device_context->RSSetViewports(1, &viewport_);
 
     // Bind render target views to output merger stage of pipeline
-    graphics_context_->device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
+    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
     
     // Bind default global render states
-    graphics_context_->device_context->VSSetSamplers(0, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_CLAMP).GetAddressOf());
-    graphics_context_->device_context->VSSetSamplers(1, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_WRAP).GetAddressOf());
-    graphics_context_->device_context->VSSetSamplers(2, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_CLAMP).GetAddressOf());
-    graphics_context_->device_context->VSSetSamplers(3, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_WRAP).GetAddressOf());
-    graphics_context_->device_context->PSSetSamplers(0, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_CLAMP).GetAddressOf());
-    graphics_context_->device_context->PSSetSamplers(1, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::POINT_WRAP).GetAddressOf());
-    graphics_context_->device_context->PSSetSamplers(2, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_CLAMP).GetAddressOf());
-    graphics_context_->device_context->PSSetSamplers(3, 1, graphics_context_->render_state_cache->GetSamplerState(SamplerState::LINEAR_WRAP).GetAddressOf());
+    gfx::device_context->VSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
+    gfx::device_context->VSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
+    gfx::device_context->VSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).GetAddressOf());
+    gfx::device_context->VSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).GetAddressOf());
+    gfx::device_context->PSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
+    gfx::device_context->PSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
+    gfx::device_context->PSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).GetAddressOf());
+    gfx::device_context->PSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).GetAddressOf());
 
     // Scene Setup 
-    mesh_.mesh_data_ = MeshData::LoadFromFile(*graphics_context_, "assets/meshes/BOSS_model_final.fbx");
-
-    SharedPtr<Texture> tex = Texture::LoadFromFile(*graphics_context_, "assets/textures/BOSS_texture_final.png");
+    mesh_.mesh_data_ = MeshData::LoadFromFile("assets/meshes/BOSS_model_final.fbx");
+    Handle<Texture> tex = gfx::resource_manager->textures.Create({ .file_path = "assets/textures/BOSS_texture_final.png" });
 
     MaterialDesc material_unlit_textured_desc
     {
         .vs_path = "assets/shaders/unlit_textured_tint.vs.hlsl",
-        .ps_path ="assets/shaders/unlit_textured_tint.ps.hlsl",
-        .rasterizer_state = RasterizerState::CULL_CCW,
-        .blend_state = BlendState::BLEND_OPAQUE,
-        .depth_stencil_state = DepthStencilState::DEFAULT
+        .ps_path = "assets/shaders/unlit_textured_tint.ps.hlsl",
+        .rasterizer_state = RasterizerState::CullCounterClockwise,
+        .blend_state = BlendState::Opaque,
+        .depth_stencil_state = DepthStencilState::Default
     };
 
     SharedPtr<Material> material_unlit_textured = MakeShared<Material>(material_unlit_textured_desc);
-    material_unlit_textured->Create(graphics_context_.get());
     material_unlit_textured->SetTexture("tex", tex);
-    material_unlit_textured->SetParam("tint", {1.0f, 0.0f, 1.0f});
+    material_unlit_textured->SetParam("tint", { 1.0f, 0.0f, 1.0f });
 
     mesh_.material_ = material_unlit_textured;
-    mesh_.transform_.scaling_ = { 1.0f };
-    mesh_.transform_.translation_ = { 0.0f, -1.0f, 0.0f };
+    mesh_.transform_.SetWorldTranslation({ 0.0f, -1.0f, 0.0f });
 
     // Set up cbuffer
-    cbuffer_per_frame_ = MakeUnique<ConstantBuffer>(graphics_context_.get(), (uint32) sizeof(CBufferPerFrame));
+    cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32) sizeof(CBufferPerFrame));
 
     // Set up camera
-    float aspect_ratio = window->GetWidth() / static_cast<float>(window->GetHeight());
+    float aspect_ratio = (float) swap_chain_desc.Width / (float) swap_chain_desc.Height;
     camera_ = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
     camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
-
-    InitImgui(window);
 }
 
 Renderer::~Renderer()
 {
-    DestroyImgui();
 }
 
 void Renderer::Render()
@@ -167,8 +229,8 @@ void Renderer::Render()
 
     // -------------------------------------------------------------------------------
     // Clear backbuffer
-    graphics_context_->device_context->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
-    graphics_context_->device_context->ClearDepthStencilView(backbuffer_depth_view_.Get(),
+    gfx::device_context->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
+    gfx::device_context->ClearDepthStencilView(backbuffer_depth_view_.Get(),
         D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f /*depth clear val*/, 0 /*stencil clear val*/);
 
     // -------------------------------------------------------------------------------
@@ -181,11 +243,11 @@ void Renderer::Render()
                                                                 // See: https://stackoverflow.com/questions/41405994/hlsl-mul-and-d3dxmatrix-order-mismatch
 
     cbuffer_per_frame_->Upload(reinterpret_cast<uint8*>(&per_frame_data_), sizeof(CBufferPerFrame));
-    graphics_context_->device_context->VSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
-    graphics_context_->device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
+    gfx::device_context->VSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
+    gfx::device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
 
     // Submit draw commands
-    mesh_.Render(*graphics_context_);
+    mesh_.Render();
 
     // -------------------------------------------------------------------------------
     // Imgui
@@ -202,20 +264,10 @@ void Renderer::Render()
 
     // -------------------------------------------------------------------------------
     // Swap front buffer with backbuffer
-    DX11_VERIFY(graphics_context_->swapchain->Present(1, 0));
+    DX11_VERIFY(gfx::swapchain->Present(1, 0));
 }
 
-void Renderer::InitImgui(Window* window)
+IRenderer* CreateRenderer()
 {
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui_ImplSDL2_InitForD3D(window->GetSDLHandle());
-    ImGui_ImplDX11_Init(graphics_context_->device.Get(), graphics_context_->device_context.Get());
-}
-
-void Renderer::DestroyImgui()
-{
-    ImGui_ImplDX11_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
+    return new Renderer();
 }

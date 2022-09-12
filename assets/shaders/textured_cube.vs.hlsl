@@ -17,7 +17,6 @@ struct VSOutput
     float2 uv : UV0;
 };
 
-
 VSOutput Main(VSInput input)
 {
     VSOutput output;

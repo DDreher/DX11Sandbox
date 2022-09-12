@@ -10,13 +10,14 @@
 #include <DirectXPackedVector.h>
 
 #include "Core/Window.h"
-#include "Renderer/Camera.h"
-#include "Renderer/DX11Types.h"
+#include "Renderer/IRenderer.h"
 #include "Renderer/GraphicsContext.h"
+#include "Renderer/DX11Types.h"
+#include "Renderer/Camera.h"
 
 using namespace DirectX;
 
-struct VertexShader
+struct SimpleVertexShader
 {
     void LoadFromHlsl(ID3D11Device* const device, const std::string& path);
 
@@ -24,15 +25,15 @@ struct VertexShader
     ComPtr<ID3D11InputLayout> input_layout = nullptr;
 };
 
-struct PixelShader
+struct SimplePixelShader
 {
     void LoadFromHlsl(ID3D11Device* const device, const std::string& path);
     ComPtr<ID3D11PixelShader> ps = nullptr;
 };
 
-struct VertexPosUV
+struct Vertex
 {
-    bool operator==(VertexPosUV const& other) const
+    bool operator==(Vertex const& other) const
     {
         return pos == other.pos && uv == other.uv;
     }
@@ -56,15 +57,14 @@ struct CBufferPerObject
     float padding[3];
 };
 
-class Renderer
+class Renderer : public IRenderer
 {
 public:
-    Renderer(Window* window);
+    Renderer();
     Renderer(const Renderer&) = delete;                 // <-- No copy!
     Renderer& operator=(const Renderer&) = delete;      // <-/
-    ~Renderer() = default;
 
-    void Render();
+    virtual void Render() override;
 
 private:
     template<typename ShaderType>
@@ -73,10 +73,10 @@ private:
     template<>
     ID3D11VertexShader* CreateShader<ID3D11VertexShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(graphics_context_.device != nullptr);
+        CHECK(gfx::device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11VertexShader* shader = nullptr;
-        graphics_context_.device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        gfx::device->CreateVertexShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
@@ -85,10 +85,10 @@ private:
     template<>
     ID3D11PixelShader* CreateShader<ID3D11PixelShader>(ID3DBlob* shader_blob, ID3D11ClassLinkage* class_linkage)
     {
-        CHECK(graphics_context_.device != nullptr);
+        CHECK(gfx::device != nullptr);
         CHECK(shader_blob != nullptr);
         ID3D11PixelShader* shader = nullptr;
-        graphics_context_.device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
+        gfx::device->CreatePixelShader(shader_blob->GetBufferPointer(), shader_blob->GetBufferSize(), class_linkage, &shader);
 
         CHECK(shader != nullptr);
         return shader;
@@ -97,7 +97,6 @@ private:
     ID3D11VertexShader* CreateVertexShader(const std::string& path);
     ID3D11PixelShader* CreatePixelShader(const std::string& path);
 
-    GraphicsContext graphics_context_;
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
 
@@ -117,8 +116,8 @@ private:
     ComPtr<ID3D11Buffer> index_buffer_ = nullptr;
 
     // Shaders
-    VertexShader vertex_shader_;
-    PixelShader pixel_shader_;
+    SimpleVertexShader vertex_shader_;
+    SimplePixelShader pixel_shader_;
 
     // Shader Resources
     ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr; // AKA Uniform Buffers in OpenGL land
@@ -127,7 +126,6 @@ private:
     float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
 
     // Object data
-    Mat4 mat_world_;
     CBufferPerObject per_object_data_;
 
     ComPtr<ID3D11Texture2D> texture_ = nullptr;
@@ -136,7 +134,7 @@ private:
 
     Camera camera_;
 
-    VertexPosUV cube_textured_vertices_[4*6] =
+    Vertex cube_textured_vertices_[4*6] =
     {
         // front
         { Vec3(-1.0f, -1.0f,  -1.0f), Vec2(0.0f, 1.0f) },
@@ -201,3 +199,5 @@ private:
         20, 22, 23
     };
 };
+
+IRenderer* CreateRenderer();
