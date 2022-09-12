@@ -11,13 +11,10 @@ AppShaderReflection::AppShaderReflection()
 void AppShaderReflection::Init()
 {
     BaseApplication::Init();
-    renderer_ = MakeUnique<Renderer>(window_);
 }
 
 void AppShaderReflection::Cleanup()
 {
-    renderer_.reset();
-
     BaseApplication::Cleanup();
 }
 
@@ -29,7 +26,6 @@ void AppShaderReflection::Update(double dt)
 void AppShaderReflection::Render()
 {
     BaseApplication::Render();
-    renderer_->Render();
 }
 
 void AppShaderReflection::HandleSDLEvent(const SDL_Event& sdl_event)

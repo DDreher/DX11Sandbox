@@ -1,6 +1,8 @@
 #pragma once
+#include <d3d11.h>
 
-#include "DXErr.h"
+#include "Renderer/DX11Types.h"
+#include "Renderer/DXErr.h"
 
 void DX11ResultFailed(HRESULT result, const char* dx_call, const char* file, uint32 line);
 
@@ -14,3 +16,7 @@ inline void SafeRelease(T& com_ptr)
     com_ptr->Release();
     com_ptr = nullptr;
 }
+
+void ReportLiveObjects(ComPtr<ID3D11Device> device);
+
+void SetDebugName(ID3D11DeviceChild* device_child, const std::string& name);

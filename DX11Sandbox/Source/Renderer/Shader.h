@@ -6,15 +6,25 @@
 #include "Renderer/ConstantBuffer.h"
 #include "Renderer/DX11Types.h"
 #include "Renderer/DX11Util.h"
-#include "Renderer/GraphicsContext.h"
-#include "Renderer/Bindable.h"
 #include "Renderer/Vertex.h"
 
 class ConstantBuffer;
 
+struct ShaderMacro
+{
+    std::string name;
+    std::string value;
+
+    bool operator==(const ShaderMacro& other) const
+    {
+        return name == other.name && value == other.value;
+    }
+};
+MAKE_HASHABLE(ShaderMacro, t.name, t.value);
+
 struct ShaderCompiler
 {
-    static HRESULT Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const char* entry_point,
+    static HRESULT Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const std::vector<ShaderMacro>& defines, const char* entry_point,
         const char* shader_target, ComPtr<ID3DBlob>& out_shader_blob);
 };
 
@@ -34,20 +44,19 @@ struct TextureBindingDesc
     UINT slot;
 };
 
-class ShaderBase : public IBindable
+class ShaderBase
 {
     friend class Material;
 
 public:
-    ShaderBase(GraphicsContext* context, const std::string& asset_path, EShaderType shader_type);
+    ShaderBase(const std::string& asset_path, EShaderType shader_type, const std::vector<ShaderMacro>& defines);
     virtual ~ShaderBase();
 
     bool LoadFromFile(const std::string asset_path);
-    bool Compile(const GraphicsContext& context, const std::vector<char>& bytes);
-    virtual void Create(GraphicsContext& context) {};
+    bool Compile(const std::vector<char>& bytes);
 
 protected:
-    virtual void Reflect(GraphicsContext& context);
+    virtual void Reflect();
 
     EShaderType shader_type_;
     std::string asset_path_;
@@ -56,39 +65,110 @@ protected:
     D3D11_SHADER_DESC shader_desc_;
 
     std::vector<char> shader_code_;
-    GraphicsContext* context_ = nullptr;
-    //std::vector<SharedPtr<ConstantBuffer>> constant_buffers_;
 
     std::vector<CBufferBindingDesc> cbuffer_bindings_;
     std::vector<TextureBindingDesc> texture_bindings_;
+    std::vector<ShaderMacro> defines_;
 };
+
+struct VertexShaderDesc
+{
+    std::string path;
+    std::vector<ShaderMacro> defines;
+
+    bool operator==(const VertexShaderDesc& other) const
+    {
+        return path == other.path && defines == other.defines;
+    }
+};
+
+namespace std
+{
+    template<>
+    struct hash<VertexShaderDesc>
+    {
+        std::size_t operator()(const VertexShaderDesc& desc) const
+        {
+            std::size_t seed = 0;
+            Hash::HashCombine(seed, desc.path);
+            Hash::HashCombine(seed, desc.defines.size());
+            for(const auto& d : desc.defines)
+            {
+                Hash::HashCombine(seed, d.name);
+                Hash::HashCombine(seed, d.value);
+            }
+
+            return seed;
+        }
+    };
+}
 
 class VertexShader : public ShaderBase
 {
 public:
-    VertexShader(GraphicsContext* context, const std::string& asset_path);
+    VertexShader(const VertexShaderDesc& desc);
     virtual ~VertexShader() {};
 
-    virtual void Create(GraphicsContext& context) override;
-    virtual void Bind(GraphicsContext& context) override;
+    void Bind();
+
+    ComPtr<ID3D11VertexShader> GetNativePtr() const
+    {
+        return native_ptr_;
+    }
+
+    ComPtr<ID3D11InputLayout> GetInputLayout() const
+    {
+        return input_layout_;
+    }
 
 protected:
-    virtual void Reflect(GraphicsContext& context) override;
+    virtual void Reflect() override;
 
-    void CreateInputLayoutFromReflection(const GraphicsContext& context);
+    void CreateInputLayoutFromReflection();
 
     ComPtr<ID3D11VertexShader> native_ptr_;
     ComPtr<ID3D11InputLayout> input_layout_;
 };
 
+struct PixelShaderDesc
+{
+    std::string path;
+    std::vector<ShaderMacro> defines;
+
+    bool operator==(const PixelShaderDesc& other) const
+    {
+        return path == other.path && defines == other.defines;
+    }
+};
+
+namespace std
+{
+    template<>
+    struct hash<PixelShaderDesc>
+    {
+        std::size_t operator()(const PixelShaderDesc& desc) const
+        {
+            std::size_t seed = 0;
+            Hash::HashCombine(seed, desc.path);
+            Hash::HashCombine(seed, desc.defines.size());
+            for (const auto& d : desc.defines)
+            {
+                Hash::HashCombine(seed, d.name);
+                Hash::HashCombine(seed, d.value);
+            }
+
+            return seed;
+        }
+    };
+}
+
 class PixelShader : public ShaderBase
 {
 public:
-    PixelShader(GraphicsContext* context, const std::string& asset_path);
+    PixelShader(const PixelShaderDesc& desc);
     virtual ~PixelShader() {};
 
-    virtual void Create(GraphicsContext& context) override;
-    virtual void Bind(GraphicsContext& context) override;
+    void Bind();
 
 protected:
     ComPtr<ID3D11PixelShader> native_ptr_;

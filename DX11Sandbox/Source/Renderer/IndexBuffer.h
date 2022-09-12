@@ -1,18 +1,22 @@
 #pragma once
-#include "Bindable.h"
-#include "DX11Types.h"
-#include "GraphicsContext.h"
+#include <d3d11.h>
 
-class IndexBuffer : public IBindable
+#include "Renderer/DX11Types.h"
+
+class IndexBuffer
 {
 public:
-    IndexBuffer(const GraphicsContext& context, uint16* indices, uint32 num_indices);
+    IndexBuffer(uint16* indices, uint32 num_indices);
 
-    void Bind(GraphicsContext& context) override;
+    void Bind();
 
     inline uint32 GetNum() { return num_; };
 
-private:
+    const ComPtr<ID3D11Buffer>& GetNativePtr() const
+    {
+        return index_buffer_;
+    }
+
     uint32 num_ = 0;
     ComPtr<ID3D11Buffer> index_buffer_;
 };

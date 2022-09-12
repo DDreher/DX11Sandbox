@@ -6,6 +6,7 @@
 #include <deque>
 #include <functional>
 #include <future>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -33,6 +34,9 @@ using int8 = signed char;
 using int16 = signed short int;
 using int32 = signed int;
 using int64 = signed long long;
+
+//~ String Type
+using String = std::string;
 
 //~ Smart Pointers
 template<typename T>

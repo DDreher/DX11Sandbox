@@ -10,36 +10,64 @@
 #include <DirectXPackedVector.h>
 
 #include "Core/Window.h"
+#include "Engine/Transform.h"
 #include "Renderer/Camera.h"
 #include "Renderer/ConstantBufferTypes.h"
 #include "Renderer/DX11Types.h"
 #include "Renderer/GraphicsContext.h"
 #include "Renderer/IndexBuffer.h"
+#include "Renderer/IRenderer.h"
 #include "Renderer/Material.h"
-#include "Renderer/Mesh.h"
 #include "Renderer/Shader.h"
 #include "Renderer/VertexBuffer.h"
 
 using namespace DirectX;
 
-class Renderer
+struct MeshData
 {
-public:
-    Renderer(Window* window);
-    Renderer(const Renderer&) = delete;                 // <-- No copy!
-    Renderer& operator=(const Renderer&) = delete;      // <-/
-    ~Renderer();
+    static SharedPtr<MeshData> LoadFromFile(const std::string& asset_path);
 
+    void Bind();
+
+    SharedPtr<IndexBuffer> index_buffer;
+    SharedPtr<VertexBuffer> pos;
+    SharedPtr<VertexBuffer> uv;
+    SharedPtr<VertexBuffer> normals;
+};
+
+struct Mesh
+{
+    Mesh() = default;
+    ~Mesh() = default;
+
+    void Update(float dt);
     void Render();
 
+    void Bind();
+
+    float rotation_angle_ = 0.0f;
+    Transform transform_;
+
+    SharedPtr<MeshData> mesh_data_;
+    SharedPtr<Material> material_;
+
+    CBufferPerObject per_object_data_;
+    ComPtr<ID3D11Buffer> cbuffer_per_object_ = nullptr;
+
+    std::string name_;
+};
+
+class Renderer : public IRenderer
+{
+public:
+    Renderer();
+    Renderer(const Renderer&) = delete;                 // <-- No copy!
+    Renderer& operator=(const Renderer&) = delete;      // <-/
+    virtual ~Renderer() override;
+
+    virtual void Render() override;
+
 private:
-    void InitImgui(Window* window);
-    void DestroyImgui();
-
-    static MeshData LoadModel(GraphicsContext const& context, std::string const& asset_path);
-
-    UniquePtr<GraphicsContext> graphics_context_ = MakeUnique<GraphicsContext>();
-
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
     ComPtr<ID3D11DepthStencilView> backbuffer_depth_view_ = nullptr;
 
@@ -66,3 +94,5 @@ private:
 
     Camera camera_;
 };
+
+IRenderer* CreateRenderer();

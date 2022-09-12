@@ -1,14 +1,14 @@
 # DirectX 11 Sandbox
 
-A small collection of DirectX 11 projects I built while learning the API.    
+A small collection of DirectX 11 projects I built while learning the API.
 
 ## Disclaimer
 
-> **"A person who never made a mistake never tried anything new."**    
+> **"A person who never made a mistake never tried anything new."**
 \-- *Albert Einstein* (or maybe Theodore Roosevelt, Matt Bellamy or even your cat. [It's not so clear](https://quoteinvestigator.com/2014/12/16/no-mistakes/).)
 
 The code inside this repository was only written for learning purposes.
-I never really tried to make it beautiful, easy to read, performant or 100% correct.    
+I never really tried to make it beautiful, easy to read, performant or 100% correct.
 In the end, all I wanted to do is to explore the API.
 Now I share my code so other people doing the same may be inspired by my journey.
 
@@ -49,14 +49,13 @@ Explored topics:
 ### [03 - Loading Models](03_Mesh/Source/)
 
 <p align="left">
-<img src="doc/images/03_model.png?raw=true" alt="Image of Subproject: 03-Mesh" height="320px">
+<img src="doc/images/03_mesh.png?raw=true" alt="Image of Subproject: 03-Mesh" height="320px">
 </p>
 
 Explored topics:
-* Loading of models from files using Assimp
+* Loading of meshes from files using Assimp
 * Revisited quaternions to calculate mesh transforms
 * Further abstractions of graphics resources (shaders, textures, buffers, materials,...)
-
 
 ### [04 - Shader Reflection](04_ShaderReflection/Source/)
 
@@ -66,6 +65,22 @@ Explored topics:
 * Setting up material parameters via shader reflection (input layouts, cbuffers, resource bindings,...)
 * Exposing an API to change material parameters during runtime
 * Rendering a simple UI with Imgui
+
+### [05 - GLTF Models](05_Models/Source/)
+
+<p align="left">
+<img src="doc/images/05_models.png?raw=true" alt="Image of Subproject: 05-Models" height="320px">
+</p>
+
+Explored topics:
+* Import of glTF models using Assimp (using Sponza as showcase)
+* Building a scene graph
+* Using resource pools with handles instead of smart pointers
+* Introduction of render queues - one for opaque materials, one for transparent materials
+* Introduction of render work items as foundation for draw call batching
+* Building shader permutations with macros (e.g. for alpha cutoff depending on material configuration)
+* Movable camera (FPS style, WASD to move, hold right mouse button to change camera direction)
+
 ## Dependencies
 
 * [Assimp](www.assimp.org)
@@ -76,7 +91,8 @@ Explored topics:
 
 ## Acknowledgments
 
-* [Chunky Knight](https://skfb.ly/6CwEJ) model by thanhtp, licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
+* [Chunky Knight](https://skfb.ly/6CwEJ) mesh by thanhtp, licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
+* [Sponza](https://www.cryengine.com/marketplace/product/crytek/sponza-sample-scene) model by Crytek, glTF taken from [KhronosGroup glTF sample models repository](https://github.com/KhronosGroup/glTF-Sample-Models).
 
 ## Learning Resources
 

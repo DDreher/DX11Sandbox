@@ -1,8 +1,11 @@
-#include "VertexBuffer.h"
+#include "Renderer/VertexBuffer.h"
 
-#include "DX11Util.h"
+#include <d3d11.h>
 
-VertexBuffer::VertexBuffer(const GraphicsContext& context, void* data, uint32 size, size_t bytes_per_element, uint32 slot)
+#include "Renderer/DX11Util.h"
+#include "Renderer/GraphicsContext.h"
+
+VertexBuffer::VertexBuffer(void* data, uint32 size, size_t bytes_per_element, uint32 slot)
     : stride_((uint32) bytes_per_element),
     slot_(slot)
 {
@@ -15,14 +18,14 @@ VertexBuffer::VertexBuffer(const GraphicsContext& context, void* data, uint32 si
     // Fill info about the initial data of the vertex buffer
     D3D11_SUBRESOURCE_DATA subresource_data = {};
     subresource_data.pSysMem = data;
-    DX11_VERIFY(context.device->CreateBuffer(&vertex_buffer_desc, &subresource_data, &vertex_buffer_));
+    DX11_VERIFY(gfx::device->CreateBuffer(&vertex_buffer_desc, &subresource_data, &vertex_buffer_));
 }
 
-void VertexBuffer::Bind(GraphicsContext& context)
+void VertexBuffer::Bind()
 {
     static const uint32 offset = 0; // Hardcoded for now...
 
-    context.device_context->IASetVertexBuffers(
+    gfx::device_context->IASetVertexBuffers(
         slot_,  // Slot we bind it to
         1,  // Num buffers
         vertex_buffer_.GetAddressOf(),    // pointer to the buffer
