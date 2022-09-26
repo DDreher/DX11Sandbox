@@ -12,6 +12,8 @@ const Vec3 Vec3::BACKWARD = { 0.0f, 0.0f, -1.0f };
 const Vec3 Vec3::RIGHT = { 1.0f, 0.0f, 0.0f };
 const Vec3 Vec3::LEFT = { -1.0f, 0.0f, 0.0f };
 
+const Vec4 Vec4::FORWARD = { Vec3::FORWARD, 0.0f };
+
 const Quat Quat::IDENTITY = { 0.f, 0.f, 0.f, 1.f };
 
 //////////////////////////////////////////////////////////////////////////
@@ -52,17 +54,26 @@ float Vec3::Dot(const Vec3& v) const
 float Vec3::Length() const
 {
     using namespace DirectX;
-    const XMVECTOR v1 = XMLoadFloat3(this);
-    const XMVECTOR result = XMVector3Length(v1);
-    return XMVectorGetX(result);
+    const XMVECTOR xm_v = XMLoadFloat3(this);
+    const XMVECTOR xm_out = XMVector3Length(xm_v);
+    return XMVectorGetX(xm_out);
 }
 
 float Vec3::LengthSquared() const
 {
     using namespace DirectX;
-    const XMVECTOR v1 = XMLoadFloat3(this);
-    const XMVECTOR result = XMVector3LengthSq(v1);
-    return XMVectorGetX(result);
+    const XMVECTOR xm_v = XMLoadFloat3(this);
+    const XMVECTOR xm_out = XMVector3LengthSq(xm_v);
+    return XMVectorGetX(xm_out);
+}
+
+Vec3 Vec3::Normalize()
+{
+    using namespace DirectX;
+    const XMVECTOR xm_v = XMLoadFloat3(this);
+    const XMVECTOR xm_out = XMVector3Normalize(xm_v);
+    XMStoreFloat3(this, xm_out);
+    return *this;
 }
 
 float Vec3::Distance(const Vec3& v1, const Vec3& v2)
@@ -107,6 +118,30 @@ Vec3 Vec3::Transform(const Vec3& v, const Quat& q)
     Vec3 out;
     XMStoreFloat3(&out, xm_out);
     return out;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+Vec4 Vec4::Transform(const Vec4& v, const Quat& q)
+{
+    using namespace DirectX;
+    const XMVECTOR xm_v = XMLoadFloat4(&v);
+    const XMVECTOR xm_q = XMLoadFloat4(&q);
+    XMVECTOR xm_out = XMVector3Rotate(xm_v, xm_q);
+    xm_out = XMVectorSelect(v, xm_out, g_XMSelect1110); // result.w = v.w
+
+    Vec4 out;
+    XMStoreFloat4(&out, xm_out);
+    return out;
+}
+
+Vec4 Vec4::Normalize()
+{
+    using namespace DirectX;
+    const XMVECTOR xm_v = XMLoadFloat4(this);
+    const XMVECTOR xm_out = XMVector4Normalize(xm_v);
+    XMStoreFloat4(this, xm_out);
+    return *this;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -243,6 +278,34 @@ Quat Quat::Inverse()
     return out;
 }
 
+Vec3 Quat::ToEuler() const
+{
+    const float xx = x * x;
+    const float yy = y * y;
+    const float zz = z * z;
+
+    const float m31 = 2.f * x * z + 2.f * y * w;
+    const float m32 = 2.f * y * z - 2.f * x * w;
+    const float m33 = 1.f - 2.f * xx - 2.f * yy;
+
+    const float cy = sqrtf(m33 * m33 + m31 * m31);
+    const float cx = atan2f(-m32, cy);
+    if (cy > 16.f * FLT_EPSILON)
+    {
+        const float m12 = 2.f * x * y + 2.f * z * w;
+        const float m22 = 1.f - 2.f * xx - 2.f * zz;
+
+        return Vec3(cx, atan2f(m31, m33), atan2f(m12, m22));
+    }
+    else
+    {
+        const float m11 = 1.f - 2.f * yy - 2.f * zz;
+        const float m21 = 2.f * x * y - 2.f * z * w;
+
+        return Vec3(cx, 0.f, atan2f(-m21, m11));
+    }
+}
+
 Mat4 Quat::ToMatrix() const
 {
     using namespace DirectX;
@@ -252,12 +315,12 @@ Mat4 Quat::ToMatrix() const
     return out;
 }
 
-Quat Quat::FromAxisAngle(const Vec3& axis, float angle)
+Quat Quat::FromAxisAngle(const Vec3& axis, float radians)
 {
     using namespace DirectX;
     const XMVECTOR axis_vec = XMLoadFloat3(&axis);
     Quat out;
-    XMStoreFloat4(&out, XMQuaternionRotationAxis(axis_vec, angle));
+    XMStoreFloat4(&out, XMQuaternionRotationAxis(axis_vec, radians));
     return out;
 }
 

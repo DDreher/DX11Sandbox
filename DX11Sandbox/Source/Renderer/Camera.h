@@ -34,7 +34,7 @@ public:
 
     void UpdateMatrices();
 
-    void Update(float dt);
+    void Update();
 
 private:
     void RecalculateProjection();
@@ -64,4 +64,5 @@ private:
     bool is_projection_dirty_ = true;
 
     Mat4 view_projection_;
+    bool is_view_projection_dirty_ = true;
 };

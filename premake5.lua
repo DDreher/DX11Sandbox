@@ -1,17 +1,17 @@
-local BaseProjectName = "DX11Sandbox"
+local baseproject_name = "DX11Sandbox"
 build_dir = "%{wks.location}/build/%{prj.name}_$(Configuration)_$(Platform)"
 intermediate_dir = "%{wks.location}/build/intermediate/%{prj.name}_$(Configuration)_$(Platform)"
 project_dir = "%{wks.location}/%{prj.name}"
 
-function AddSourceFiles(DirectoryPath)
+function AddSourceFiles(directory_path)
     files
     {
-        ("./" .. DirectoryPath .. "/**.h"),
-        ("./" .. DirectoryPath .. "/**.hpp"),
-        ("./" .. DirectoryPath .. "/**.cpp"),
-        ("./" .. DirectoryPath .. "/**.inl"),
-        ("./" .. DirectoryPath .. "/**.c"),
-        ("./" .. DirectoryPath .. "/**.cs")
+        ("./" .. directory_path .. "/**.h"),
+        ("./" .. directory_path .. "/**.hpp"),
+        ("./" .. directory_path .. "/**.cpp"),
+        ("./" .. directory_path .. "/**.inl"),
+        ("./" .. directory_path .. "/**.c"),
+        ("./" .. directory_path .. "/**.cs")
     }
 end
 
@@ -67,18 +67,18 @@ group "Dependencies"
     include "ThirdParty/ImGui"
 group ""
 
-print("Generating Project: " .. BaseProjectName)
-project (BaseProjectName)
+print("Generating Project: " .. baseproject_name)
+project (baseproject_name)
     location (project_dir)
     targetdir (build_dir)
     objdir (intermediate_dir)
     kind "StaticLib"
 
-    AddSourceFiles(BaseProjectName)
-    includedirs { ("$(SolutionDir)/" .. BaseProjectName .. "/Source/") }
+    AddSourceFiles(baseproject_name)
+    includedirs { ("$(SolutionDir)/" .. baseproject_name .. "/Source/") }
 
     pchheader ("Core.h")
-    pchsource ("./" .. BaseProjectName .. "/Source/Core/Core.cpp")
+    pchsource ("./" .. baseproject_name .. "/Source/Core/Core.cpp")
     forceincludes  { "Core.h" }
 
     disablewarnings
@@ -99,23 +99,23 @@ project (BaseProjectName)
 
     filter {}
 
-local ProjectName = "01_HelloTriangle"
-print("Generating Project: " .. ProjectName)
-project (ProjectName)
+local project_name = "01_HelloTriangle"
+print("Generating Project: " .. project_name)
+project (project_name)
     location (project_dir)
     targetdir (build_dir)
     objdir (intermediate_dir)
     kind "ConsoleApp"
 
-    links { (BaseProjectName) }
-    includedirs { ("./" .. BaseProjectName .. "/Source/") }
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
 
-    AddSourceFiles(ProjectName)
+    AddSourceFiles(project_name)
     includedirs { "$(ProjectDir)" }
-    includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
 
     pchheader ("AppCore.h")
-    pchsource ("./" .. ProjectName .. "/Source/Core/AppCore.cpp")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
     forceincludes  { "AppCore.h" }
 
     disablewarnings
@@ -134,23 +134,23 @@ project (ProjectName)
 
     filter {}
 
-ProjectName = "02_TexturedCube"
-print("Generating Project: " .. ProjectName)
-project (ProjectName)
+project_name = "02_TexturedCube"
+print("Generating Project: " .. project_name)
+project (project_name)
     location (project_dir)
     targetdir (build_dir)
     objdir (intermediate_dir)
     kind "ConsoleApp"
 
-    links { (BaseProjectName) }
-    includedirs { ("./" .. BaseProjectName .. "/Source/") }
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
 
-    AddSourceFiles(ProjectName)
+    AddSourceFiles(project_name)
     includedirs { "$(ProjectDir)" }
-    includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
 
     pchheader ("AppCore.h")
-    pchsource ("./" .. ProjectName .. "/Source/Core/AppCore.cpp")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
     forceincludes  { "AppCore.h" }
 
     disablewarnings
@@ -169,23 +169,23 @@ project (ProjectName)
 
     filter {}
 
-ProjectName = "03_Mesh"
-print("Generating Project: " .. ProjectName)
-project (ProjectName)
+project_name = "03_Mesh"
+print("Generating Project: " .. project_name)
+project (project_name)
     location (project_dir)
     targetdir (build_dir)
     objdir (intermediate_dir)
     kind "ConsoleApp"
 
-    links { (BaseProjectName) }
-    includedirs { ("./" .. BaseProjectName .. "/Source/") }
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
 
-    AddSourceFiles(ProjectName)
+    AddSourceFiles(project_name)
     includedirs { "$(ProjectDir)" }
-    includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
 
     pchheader ("AppCore.h")
-    pchsource ("./" .. ProjectName .. "/Source/Core/AppCore.cpp")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
     forceincludes  { "AppCore.h" }
 
     disablewarnings
@@ -205,23 +205,23 @@ project (ProjectName)
 
     filter {}
 
-ProjectName = "04_ShaderReflection"
-print("Generating Project: " .. ProjectName)
-project (ProjectName)
+project_name = "04_ShaderReflection"
+print("Generating Project: " .. project_name)
+project (project_name)
     location (project_dir)
     targetdir (build_dir)
     objdir (intermediate_dir)
     kind "ConsoleApp"
 
-    links { (BaseProjectName) }
-    includedirs { ("./" .. BaseProjectName .. "/Source/") }
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
 
-    AddSourceFiles(ProjectName)
+    AddSourceFiles(project_name)
     includedirs { "$(ProjectDir)" }
-    includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
 
     pchheader ("AppCore.h")
-    pchsource ("./" .. ProjectName .. "/Source/Core/AppCore.cpp")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
     forceincludes  { "AppCore.h" }
 
     disablewarnings
@@ -242,23 +242,23 @@ project (ProjectName)
 
     filter {}
 
-ProjectName = "05_Models"
-print("Generating Project: " .. ProjectName)
-project (ProjectName)
+project_name = "05_Models"
+print("Generating Project: " .. project_name)
+project (project_name)
     location (project_dir)
     targetdir (build_dir)
     objdir (intermediate_dir)
     kind "ConsoleApp"
 
-    links { (BaseProjectName) }
-    includedirs { ("./" .. BaseProjectName .. "/Source/") }
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
 
-    AddSourceFiles(ProjectName)
+    AddSourceFiles(project_name)
     includedirs { "$(ProjectDir)" }
-    includedirs { ("$(SolutionDir)/" .. ProjectName .. "/Source/") }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
 
     pchheader ("AppCore.h")
-    pchsource ("./" .. ProjectName .. "/Source/Core/AppCore.cpp")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
     forceincludes  { "AppCore.h" }
 
     disablewarnings
@@ -280,9 +280,60 @@ project (ProjectName)
 
     filter {}
 
-ProjectName = "RegenerateProjectFiles"
-print("Generating Project: " .. ProjectName)
-project (ProjectName)
+project_name = "06_Lighting"
+print("Generating Project: " .. project_name)
+project (project_name)
+    location (project_dir)
+    targetdir (build_dir)
+    objdir (intermediate_dir)
+    kind "ConsoleApp"
+
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
+
+    AddSourceFiles(project_name)
+    includedirs { "$(ProjectDir)" }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
+
+    pchheader ("AppCore.h")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
+    forceincludes  { "AppCore.h" }
+
+    disablewarnings
+    {
+        "4100", -- unreferenced formal paramter
+        "4189"  -- local variable initalized but not referenced
+    }
+
+    includedirs "$(SolutionDir)/ThirdParty/Assimp/include/"
+    AddAssimp()
+    AddSTB()
+    AddSpdlog()
+    AddSDL2()
+    AddImGui()
+
+    filter "files:**/ThirdParty/**.*"
+        flags "NoPCH"
+        disablewarnings { "4100" }
+
+    filter {}
+
+project_name = "Shaders"
+print("Generating Project: " .. project_name)
+project (project_name)
+    kind "Utility"
+    location (project_dir)
+    targetdir (build_dir)
+    objdir (intermediate_dir)
+
+    files
+    {
+        "%{wks.location}/**.hlsl*"
+    }
+
+project_name = "RegenerateProjectFiles"
+print("Generating Project: " .. project_name)
+project (project_name)
     kind "Utility"
     location (project_dir)
     targetdir (build_dir)

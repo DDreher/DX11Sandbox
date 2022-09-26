@@ -151,16 +151,16 @@ bool ShaderBase::LoadFromFile(const std::string asset_path)
 
 bool ShaderBase::Compile(const std::vector<char>& bytes)
 {
-    LOG("Compiling shader: {}", asset_path_);
-    bool did_succeed = false;
-
     const auto it = ::SHADER_TARGET_MAP.find(shader_type_);
-    if(it != ::SHADER_TARGET_MAP.end())
-    {
-        did_succeed = SUCCEEDED(ShaderCompiler::Compile(asset_path_, bytes, defines_, ::ENTRYPOINT, it->second, shader_blob_));
-    }
+    CHECK_MSG(it != ::SHADER_TARGET_MAP.end(), "Tried to compile unknown shader type");
 
-    return did_succeed;
+    LOG("Compiling shader: {}", asset_path_);
+    bool did_compilation_succeed = SUCCEEDED(ShaderCompiler::Compile(asset_path_, bytes, defines_, ::ENTRYPOINT, it->second, shader_blob_));
+    
+    // For now we'll assert until shader hot reloading is implemented.
+    CHECK_MSG(did_compilation_succeed, "Shader compilation failed.");
+
+    return did_compilation_succeed;
 }
 
 void ShaderBase::Reflect()
@@ -177,8 +177,7 @@ void ShaderBase::Reflect()
         if(binding_desc.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
         {
             const std::string& cbuffer_name(binding_desc.Name);
-            if(cbuffer_name == ConstantBuffer::CBUFFER_NAME_PER_FRAME ||
-                cbuffer_name == ConstantBuffer::CBUFFER_NAME_PER_INSTANCE)
+            if(cbuffer_name != ConstantBuffer::CBUFFER_NAME_PER_MATERIAL)
             {
                 // Skip - These will be set from outside shaders / materials
                 continue;

@@ -23,14 +23,15 @@ namespace
         DXGI_SWAP_CHAIN_DESC1 swapchain_desc = {};
         swapchain_desc.Width = static_cast<UINT>(window->GetWidth());
         swapchain_desc.Height = static_cast<UINT>(window->GetHeight());
-        swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;  // Expected to be normalized to range 0 - 1
+        swapchain_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;  // Not SRGB due to DXGI_SWAP_EFFECT_FLIP_DISCARD!
+                                                             // See: https://walbourn.github.io/care-and-feeding-of-modern-swapchains/
         swapchain_desc.Stereo = FALSE;
         swapchain_desc.SampleDesc.Count = 1;
         swapchain_desc.SampleDesc.Quality = 0;
         swapchain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;   // Describes surface usage and CPU access for backbuffer
-        swapchain_desc.BufferCount = static_cast<UINT>(1);  // Num backbuffers (?) I think this does not include the front buffer
+        swapchain_desc.BufferCount = 2U;
         swapchain_desc.Scaling = DXGI_SCALING::DXGI_SCALING_STRETCH;
-        swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;   // Discard backbuffer content after present
+        swapchain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;   // Don't use DXGI_SWAP_EFFECT_DISCARD - causes random stutters.
         swapchain_desc.AlphaMode = DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_IGNORE;
 
         D3D_FEATURE_LEVEL accepted_feature_levels[] =

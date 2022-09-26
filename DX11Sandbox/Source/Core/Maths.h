@@ -141,6 +141,7 @@ struct Vec3 : public DirectX::XMFLOAT3
 
     float Length() const;
     float LengthSquared() const;
+    Vec3 Normalize();
 
     static float Distance(const Vec3& v1, const Vec3& v2);
     static float DistanceSquared(const Vec3& v1, const Vec3& v2);
@@ -165,6 +166,7 @@ struct Vec4 : public DirectX::XMFLOAT4
 {
     Vec4() : DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f) {}
     Vec4(float f) : DirectX::XMFLOAT4(f, f, f, f) {}
+    Vec4(const Vec3& v, float w) : DirectX::XMFLOAT4(v.x, v.y, v.z, w) {}
     Vec4(float x, float y, float z, float w) : DirectX::XMFLOAT4(x, y, z, w) {}
     Vec4(DirectX::XMVECTOR v) { DirectX::XMStoreFloat4(this, v); }
 
@@ -195,6 +197,17 @@ struct Vec4 : public DirectX::XMFLOAT4
         XMStoreFloat4(this, result);
         return *this;
     }
+
+    static Vec4 Transform(const Vec4& v, const Quat& q);
+
+    Vec4 Normalize();
+
+    Vec3 xyz()
+    {
+        return { x, y, z };
+    }
+
+    static const Vec4 FORWARD;
 };
 MAKE_HASHABLE(Vec4, t.x, t.y, t.z, t.w);
 
@@ -222,7 +235,7 @@ struct Mat4 : public DirectX::XMFLOAT4X4
     Mat4(Mat4&&) = default;
     Mat4& operator=(Mat4&&) = default;
 
-    Mat4& operator*= (const Mat4& other);
+    Mat4& operator*=(const Mat4& other);
 
     operator DirectX::XMMATRIX() const { return DirectX::XMLoadFloat4x4(this); }
 
@@ -331,7 +344,7 @@ struct Quat : public DirectX::XMFLOAT4
 
     static Quat Normalize(const Quat& q);
 
-    static Quat FromAxisAngle(const Vec3& axis, float angle);
+    static Quat FromAxisAngle(const Vec3& axis, float radians);
     static Quat FromPitchYawRoll(float pitch, float yaw, float roll);
     static Quat FromPitchYawRoll(const Vec3& v);
     static Quat FromRotationMatrix(const Mat4& m);

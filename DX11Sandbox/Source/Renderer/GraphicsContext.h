@@ -50,6 +50,7 @@ namespace gfx
     inline IRenderer* renderer = nullptr;
     inline PipelineState pipeline_state;
 
-    // TEMP
+    // Scene Data
     inline Camera camera;
+
 }

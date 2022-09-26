@@ -15,9 +15,9 @@ void AppTexturedCube::Cleanup()
     BaseApplication::Cleanup();
 }
 
-void AppTexturedCube::Update(double dt)
+void AppTexturedCube::Update()
 {
-    BaseApplication::Update(dt);
+    BaseApplication::Update();
 }
 
 void AppTexturedCube::Render()

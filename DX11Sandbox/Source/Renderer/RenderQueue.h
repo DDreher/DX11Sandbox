@@ -15,7 +15,7 @@ struct RenderWorkItem
     // A better solution would be to generate a sort key which also considers materials, render states, etc.
     // See: https://aras-p.info/blog/2014/01/16/rough-sorting-by-depth/
     // http://realtimecollisiondetection.net/blog/?p=86
-    float distance_from_camera = 0.0f;
+    float sort_key = 0.0f;
     StaticMesh* mesh = nullptr; // TODO: handle?
 };
 

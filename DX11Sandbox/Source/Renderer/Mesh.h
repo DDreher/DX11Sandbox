@@ -180,14 +180,14 @@ struct Model
     SharedPtr<VertexBuffer> normals;
 };
 
-struct ModelDescription
+struct MeshFileDesc
 {
     String path;
     Transform correction_transform;
 };
 
-class ModelImporter
+class MeshImporter
 {
 public:
-    static SharedPtr<Model> LoadFromFile(const ModelDescription& desc);
+    static SharedPtr<Model> LoadFromFile(const MeshFileDesc& desc);
 };

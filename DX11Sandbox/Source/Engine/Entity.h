@@ -7,11 +7,11 @@ public:
     Entity();
     ~Entity();
 
-    void Update(double dt)
+    void Update()
     {
         for(auto& component : components_)
         {
-            component->Update(dt);
+            component->Update();
         }
     }
 

@@ -34,6 +34,7 @@ public:
     virtual ~Renderer() final;
 
     virtual void Render() final;
+    virtual void RenderUI() final;
 
     virtual void Enqueue(const RenderWorkItem& item, BlendState blend_state) final;
 
@@ -57,6 +58,8 @@ private:
     // Object data
     CBufferPerFrame per_frame_data_;
     UniquePtr<ConstantBuffer> cbuffer_per_frame_;
+    CBufferPerView per_view_data_;
+    UniquePtr<ConstantBuffer> cbuffer_per_view_;
 
     ComPtr<ID3D11Texture2D> texture_ = nullptr;
     ComPtr<ID3D11ShaderResourceView> texture_srv_ = nullptr;

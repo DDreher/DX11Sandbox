@@ -1,6 +1,6 @@
 #include "Component.h"
 
-void TransformComponent::Update(double dt)
+void TransformComponent::Update()
 {
     RecalculateTransform();
 }

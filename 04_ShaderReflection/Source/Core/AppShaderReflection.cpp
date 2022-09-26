@@ -18,9 +18,9 @@ void AppShaderReflection::Cleanup()
     BaseApplication::Cleanup();
 }
 
-void AppShaderReflection::Update(double dt)
+void AppShaderReflection::Update()
 {
-    BaseApplication::Update(dt);
+    BaseApplication::Update();
 }
 
 void AppShaderReflection::Render()

@@ -51,6 +51,7 @@
 !*.obj
 !*.mtl
 !*.fbx
+!*.glb
 
 # Text files
 !*.txt
@@ -126,7 +127,7 @@
 # Annoying windows files
 [Dd]esktop.ini
 
-# intermediate files 
+# intermediate files
 Intermediate/
 obj/
 Saved/
