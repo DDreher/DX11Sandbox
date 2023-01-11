@@ -10,7 +10,7 @@ public:
 protected:
     void Init() override;
     void Cleanup() override;
-    void Update(double dt) override;
+    void Update() override;
     void Render() override;
 
     void HandleSDLEvent(const SDL_Event& sdl_event) override;

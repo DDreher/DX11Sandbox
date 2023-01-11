@@ -130,6 +130,6 @@ void Material::SetParam(const std::string& param_name, float val)
 {
     for (auto& cbuffer : cbuffers_)
     {
-        cbuffer->SetVec3(param_name, val);
+        cbuffer->SetFloat(param_name, val);
     }
 }

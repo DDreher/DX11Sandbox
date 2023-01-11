@@ -7,17 +7,16 @@ Entity::Entity()
 
 Entity::~Entity()
 {
-    delete transform_;
-    transform_ = nullptr;
-
     for(IComponent* c : components_)
     {
-        delete c;
-        c = nullptr;
+        if(c != nullptr)
+        {
+            delete c;
+            c = nullptr;
+        }
     }
 }
 
-//
 //Handle<Entity> EntityManager::CreateEntity()
 //{
 //    Handle<Entity> out_handle = entity_pool_.Create();

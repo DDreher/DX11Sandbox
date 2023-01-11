@@ -8,7 +8,7 @@ public:
     World() = default;
     ~World() = default;
 
-    void Update(double dt);
+    void Update();
 
     void Add(const SharedPtr<Entity>& entity);
 

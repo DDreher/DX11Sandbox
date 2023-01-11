@@ -16,7 +16,7 @@ void RenderQueue::Sort()
         {
             const RenderWorkItem& a = items_[idx_a];
             const RenderWorkItem& b = items_[idx_b];
-            return a.distance_from_camera < b.distance_from_camera;
+            return a.sort_key < b.sort_key;
         });
         break;
     case RenderQueueSortType::BackToFront:
@@ -24,7 +24,7 @@ void RenderQueue::Sort()
         {
             const RenderWorkItem& a = items_[idx_a];
             const RenderWorkItem& b = items_[idx_b];
-            return a.distance_from_camera > b.distance_from_camera;
+            return a.sort_key > b.sort_key;
         });
         break;
     default:

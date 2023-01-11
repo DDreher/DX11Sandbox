@@ -15,9 +15,9 @@ void AppHelloTriangle::Cleanup()
     BaseApplication::Cleanup();
 }
 
-void AppHelloTriangle::Update(double dt)
+void AppHelloTriangle::Update()
 {
-    BaseApplication::Update(dt);
+    // No update required, it's just a static triangle :)
 }
 
 void AppHelloTriangle::Render()

@@ -110,7 +110,7 @@ bool ConstantBuffer::SetMat4(const std::string& param_name, Mat4 val)
 void ConstantBuffer::SetData(const uint8* data, size_t data_size)
 {
     CHECK(data_ != nullptr);
-    CHECK(size_ <= data_size);
+    CHECK(size_ >= data_size);
     CHECK(data_size > 0);
 
     std::memcpy(data_, data, data_size);
@@ -120,7 +120,7 @@ void ConstantBuffer::SetData(const uint8* data, size_t data_size)
 void ConstantBuffer::Upload(const uint8* data, size_t data_size)
 {
     CHECK(data_ != nullptr);
-    CHECK(size_ <= data_size);
+    CHECK(size_ >= data_size);
     CHECK(data_size > 0);
     SetData(data, data_size);
     Upload();

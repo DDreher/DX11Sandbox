@@ -5,6 +5,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "Core/Application.h"
 #include "Core/FileIO.h"
 #include "Renderer/DX11Types.h"
 #include "Renderer/DX11Util.h"
@@ -97,9 +98,14 @@ Renderer::Renderer()
     // Even with triple buffering we only need a single render target view (?)
     ComPtr<ID3D11Texture2D> backbuffer;
     DX11_VERIFY(gfx::swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
+
+    D3D11_RENDER_TARGET_VIEW_DESC render_target_view_desc = {};
+    render_target_view_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    render_target_view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
     DX11_VERIFY(gfx::device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
-        nullptr,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
+        &render_target_view_desc,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
         &backbuffer_color_view_));
 
     // Create depth/stencil buffer and view
@@ -181,12 +187,9 @@ Renderer::Renderer()
     viewport_.MaxDepth = 1.0f;
     gfx::device_context->RSSetViewports(1, &viewport_);
 
-    // Bind render target views to output merger stage of pipeline
-    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
-    
     // Load Shaders
-    vertex_shader_.LoadFromHlsl(gfx::device.Get(), "assets/shaders/textured_cube.vs.hlsl");
-    pixel_shader_.LoadFromHlsl(gfx::device.Get(), "assets/shaders/textured_cube.ps.hlsl");
+    vertex_shader_.LoadFromHlsl(gfx::device.Get(), "assets/shaders/textured_cube_vs.hlsl");
+    pixel_shader_.LoadFromHlsl(gfx::device.Get(), "assets/shaders/textured_cube_ps.hlsl");
 
     // Set up Vertex Buffer.
     D3D11_BUFFER_DESC vertex_buffer_desc = {};
@@ -215,13 +218,13 @@ Renderer::Renderer()
     D3D11_BUFFER_DESC cbuffer_per_object_desc = {};
     cbuffer_per_object_desc.Usage = D3D11_USAGE_DEFAULT;   // Read / Write access
     cbuffer_per_object_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-    cbuffer_per_object_desc.ByteWidth = sizeof(CBufferPerObject);
+    cbuffer_per_object_desc.ByteWidth = sizeof(CBufferPerCube);
     cbuffer_per_object_desc.CPUAccessFlags = 0;
     DX11_VERIFY(gfx::device->CreateBuffer(&cbuffer_per_object_desc, nullptr, &cbuffer_per_object_));
 
     // Set up camera
     float aspect_ratio = (float)swap_chain_desc.Width / (float)swap_chain_desc.Height;
-    camera_ = Camera(Vec3(0.0f, 0.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
+    gfx::camera = Camera(Vec3(0.0f, 0.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
 
     // Load texture
     int tex_width;
@@ -289,9 +292,12 @@ Renderer::Renderer()
 void Renderer::Render()
 {
     // Update object (temporarily in here for testing purposes)
-    static float dt = 1.0f / 60.0f;
+    static float dt = BaseApplication::Get()->GetTimestep();
     static float angle = 0.0f;
-    angle += 45.0f * dt;
+    angle += 2.5f * dt;
+
+    // Bind render target views to output merger stage of pipeline
+    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
 
     // Clear backbuffer
     gfx::device_context->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
@@ -325,7 +331,7 @@ void Renderer::Render()
 
     // Update the cbuffer
     Mat4 mat_world = XMMatrixRotationX(XMConvertToRadians(angle)) * XMMatrixTranslation(.5f, 0.0f, 0.5f);
-    Mat4 mat_wvp = mat_world * camera_.GetView() * camera_.GetProjection();
+    Mat4 mat_wvp = mat_world * gfx::camera.GetViewProjection();
     per_object_data_.wvp = mat_wvp.Transpose(); // CPU: row major, GPU: col major! -> We have to transpose.
     per_object_data_.alpha = 0.25f;
     gfx::device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
@@ -333,10 +339,6 @@ void Renderer::Render()
     gfx::device_context->PSSetConstantBuffers(0, 1, cbuffer_per_object_.GetAddressOf());
 
     gfx::device_context->DrawIndexed(_countof(cube_tex_indices_), 0 /*start idx*/, 0 /*idx offset*/);
-
-    // -------------------------------------------------------------------------------
-    // Swap front buffer with backbuffer
-    DX11_VERIFY(gfx::swapchain->Present(1, 0));
 }
 
 IRenderer* CreateRenderer()

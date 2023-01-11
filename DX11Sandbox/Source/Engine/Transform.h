@@ -46,6 +46,11 @@ public:
     void AddChild(Transform* t);
     void RemoveChild(Transform* t);
 
+    Vec4 GetWorldForward()
+    {
+        return Vec4::Transform(Vec4::FORWARD, rotation_world_);
+    }
+
 private:
     Vec3 scaling_world_ = Vec3(1.0f);
     Quat rotation_world_ = Quat::IDENTITY;

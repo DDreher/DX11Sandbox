@@ -17,9 +17,9 @@ void AppMesh::Cleanup()
     BaseApplication::Cleanup();
 }
 
-void AppMesh::Update(double dt)
+void AppMesh::Update()
 {
-    BaseApplication::Update(dt);
+    BaseApplication::Update();
 }
 
 void AppMesh::Render()

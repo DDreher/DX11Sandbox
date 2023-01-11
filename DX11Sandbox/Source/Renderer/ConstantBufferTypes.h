@@ -4,12 +4,19 @@ DECLSPEC_ALIGN(16)
 struct CBufferPerObject
 {
     Mat4 mat_world;
-    Vec3 color = Vec3(1.0f);
-    float padding = 0.0f;
+};
+
+DECLSPEC_ALIGN(16)
+struct CBufferPerView
+{
+    Mat4 mat_view;
+    Mat4 mat_inv_view;
+    Mat4 mat_view_projection;
+    Mat4 mat_inv_view_projection;
+    Vec4 pos_camera_ws;
 };
 
 DECLSPEC_ALIGN(16)
 struct CBufferPerFrame
 {
-    Mat4 mat_view_projection;
 };

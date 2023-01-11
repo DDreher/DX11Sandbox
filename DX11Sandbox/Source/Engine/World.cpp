@@ -1,11 +1,14 @@
 #include "Engine/World.h"
+#include "Renderer/GraphicsContext.h"
 
-void World::Update(double dt)
+void World::Update()
 {
     for(auto entity : entities_)
     {
-        entity->Update(dt);
+        entity->Update();
     }
+
+    gfx::camera.Update();
 }
 
 void World::Add(const SharedPtr<Entity>& entity)
