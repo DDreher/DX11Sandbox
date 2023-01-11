@@ -7,13 +7,16 @@ enum class ComponentType : uint32
     Transform,
     StaticMesh,
     Camera,
+    DirectionalLight,
+    PointLight,
+    SpotLight,
     Invalid
 };
 
 class IComponent
 {
 public:
-    virtual void Update(double dt) {}
+    virtual void Update() {}
     virtual ComponentType GetType() const = 0;
 
 private:
@@ -30,8 +33,7 @@ public:
 class TransformComponent : public BaseComponent<ComponentType::Transform>, public Transform
 {
 public:
-    void Update(double dt) override;
-
+    void Update() override;
 };
 
 class StaticMeshComponent : public BaseComponent<ComponentType::StaticMesh>
@@ -43,7 +45,7 @@ public:
 
     StaticMeshComponent(const String& model_path, Transform import_transform)
     {
-        model_ = ModelImporter::LoadFromFile({ model_path, import_transform });
+        model_ = MeshImporter::LoadFromFile({ model_path, import_transform });
     }
 
     SharedPtr<Model> model_;
@@ -51,4 +53,34 @@ public:
 
 class CameraComponent : public BaseComponent<ComponentType::Camera>
 {
+};
+
+class DirectionalLightComponent : public BaseComponent<ComponentType::DirectionalLight>
+{
+public:
+    bool is_enabled_ = true;
+    Vec3 color_ = Vec3(1.0f, 1.0f, 1.0f);
+    float brightness_ = 1.0f;
+    float ambient_intensity_ = 0.05f;
+};
+
+class PointLightComponent : public BaseComponent<ComponentType::PointLight>
+{
+public:
+    bool is_enabled_ = true;
+    Vec3 color_ = Vec3(1.0f, 1.0f, 1.0f);
+    float brightness_ = 1.0f;
+    float ambient_intensity_ = 0.01f;
+    float attenuation_ = 1.0f;
+};
+
+class SpotLightComponent : public BaseComponent<ComponentType::SpotLight>
+{
+public:
+    bool is_enabled_ = true;
+    Vec3 color_ = Vec3(1.0f, 1.0f, 1.0f);
+    float brightness_ = 1.0f;
+    float ambient_intensity_ = 0.01f;
+    float cone_angle_ = 45.0f;
+    float attenuation_ = 1.0f;
 };

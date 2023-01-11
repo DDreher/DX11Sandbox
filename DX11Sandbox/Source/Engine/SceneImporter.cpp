@@ -8,7 +8,7 @@
 #include "World.h"
 #include "Entity.h"
 
-void SceneImporter::ImportScene(const SceneDescription& scene_desc, World& world)
+SharedPtr<Entity> SceneImporter::ImportScene(const SceneDescription& scene_desc, World& world)
 {
     LOG("Loading Scene: {}", scene_desc.path);
     auto root_path = std::filesystem::path(scene_desc.path).parent_path();
@@ -21,10 +21,11 @@ void SceneImporter::ImportScene(const SceneDescription& scene_desc, World& world
     CHECK_MSG(ai_scene != nullptr, "Failed to load mesh from file: {}. \n Error: {}", scene_desc.path, ai_importer.GetErrorString());
 
     aiNode* root = ai_scene->mRootNode;
-    ProcessNode(scene_desc, ai_scene, root, nullptr, world);
+    SharedPtr<Entity> entity = ProcessNode(scene_desc, ai_scene, root, nullptr, world);
+    return entity;
 }
 
-void SceneImporter::ProcessNode(const SceneDescription& scene_desc, const aiScene* scene, aiNode* node, Entity* parent, World& world)
+SharedPtr<Entity> SceneImporter::ProcessNode(const SceneDescription& scene_desc, const aiScene* scene, aiNode* node, Entity* parent, World& world)
 {
     SharedPtr<Entity> entity = MakeShared<Entity>();
     entity->name_ = node->mName.C_Str();
@@ -71,6 +72,8 @@ void SceneImporter::ProcessNode(const SceneDescription& scene_desc, const aiScen
     {
         ProcessNode(scene_desc, scene, node->mChildren[i], entity.get(), world);
     }
+
+    return entity;
 }
 
 SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, const aiScene* scene, aiNode* node, uint32 mesh_idx)
@@ -88,6 +91,9 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
     BlendState material_blendstate = BlendState::Opaque;
     aiString blend_mode_string;
     ai_material->Get(AI_MATKEY_GLTF_ALPHAMODE, blend_mode_string);
+
+    int shading_model;
+    ai_material->Get(AI_MATKEY_SHADING_MODEL, shading_model);
 
     bool is_alpha_cutoff = false;
     float alpha_cutoff = 0.0f;
@@ -109,8 +115,8 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
 
     MaterialDesc mat_desc_textured
     {
-        .vs_path = "assets/shaders/unlit_textured.vs.hlsl",
-        .ps_path = "assets/shaders/unlit_textured.ps.hlsl",
+        .vs_path = "assets/shaders/forward_phong_vs.hlsl",
+        .ps_path = "assets/shaders/forward_phong_ps.hlsl",
         .rasterizer_state = is_two_sided ? RasterizerState::CullNone : RasterizerState::CullCounterClockwise,
         .blend_state = material_blendstate,
         .depth_stencil_state = DepthStencilState::Default,

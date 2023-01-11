@@ -125,9 +125,14 @@ Renderer::Renderer()
 
     ComPtr<ID3D11Texture2D> backbuffer;
     DX11_VERIFY(gfx::swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
+
+    D3D11_RENDER_TARGET_VIEW_DESC render_target_view_desc = {};
+    render_target_view_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    render_target_view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
     DX11_VERIFY(gfx::device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
-        nullptr,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
+        &render_target_view_desc,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
         &backbuffer_color_view_));
 
     // Configure viewport, i.e. the renderable area
@@ -139,9 +144,6 @@ Renderer::Renderer()
     viewport_.MaxDepth = 1.0f;
     gfx::device_context->RSSetViewports(1, &viewport_);
 
-    // Bind render target views to output merger stage of pipeline
-    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), nullptr);
-    
     // Load Shaders
     vertex_shader_.LoadFromHlsl(gfx::device.Get(), "assets/shaders/triangle.vs.hlsl");
     pixel_shader_.LoadFromHlsl(gfx::device.Get(), "assets/shaders/triangle.ps.hlsl");
@@ -172,6 +174,9 @@ Renderer::Renderer()
 
 void Renderer::Render()
 {
+    // Bind render target views to output merger stage of pipeline
+    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), nullptr);
+
     // -------------------------------------------------------------------------------
     // Clear backbuffer
     gfx::device_context->ClearRenderTargetView(backbuffer_color_view_.Get(), clear_color_);
@@ -199,10 +204,6 @@ void Renderer::Render()
     gfx::device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     gfx::device_context->DrawIndexed(_countof(triangle_indices_), 0 /*start idx*/, 0 /*idx offset*/);
-
-    // -------------------------------------------------------------------------------
-    // Swap front buffer with backbuffer
-    DX11_VERIFY(gfx::swapchain->Present(1, 0));
 }
 
 IRenderer* CreateRenderer()

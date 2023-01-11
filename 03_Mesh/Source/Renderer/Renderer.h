@@ -81,20 +81,16 @@ private:
     // Scene
     Mesh mesh_;
 
-    // Shader Resources
-    UniquePtr<ConstantBuffer> cbuffer_per_frame_;
+    // Object data
+    CBufferPerView per_view_data_;
+    UniquePtr<ConstantBuffer> cbuffer_per_view_;
 
     // General render settings
     float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
 
-    // Object data
-    CBufferPerFrame per_frame_data_;
-
     ComPtr<ID3D11Texture2D> texture_ = nullptr;
     ComPtr<ID3D11ShaderResourceView> texture_srv_ = nullptr;
     ComPtr<ID3D11SamplerState> texture_sampler_state_ = nullptr;
-
-    Camera camera_;
 };
 
 IRenderer* CreateRenderer();

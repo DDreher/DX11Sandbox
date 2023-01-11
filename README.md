@@ -81,6 +81,18 @@ Explored topics:
 * Building shader permutations with macros (e.g. for alpha cutoff depending on material configuration)
 * Movable camera (FPS style, WASD to move, hold right mouse button to change camera direction)
 
+### [06 - Blinn-Phong](06_Lighting/Source/)
+
+<p align="left">
+<img src="doc/images/06_phong.png?raw=true" alt="Image of Subproject: 06-Lighting" height="320px">
+</p>
+
+Explored topics:
+* (Blinn-)Phong reflection model
+* Directional lights
+* Spot lights
+* Point lights
+
 ## Dependencies
 
 * [Assimp](www.assimp.org)
@@ -96,6 +108,8 @@ Explored topics:
 
 ## Learning Resources
 
+* [Real-time Rendering 4th edition](https://www.realtimerendering.com/)
+* [LearnOpenGL](https://learnopengl.com/)
 * [YouTube: ChiliTomatoNoodle](https://www.youtube.com/channel/UCsyHonfwHi4fLb2lkq0DEAA)
 * [Rastertek](http://www.rastertek.com/tutdx11.html)
 * [3dgep](https://www.3dgep.com/introduction-to-directx-11/)

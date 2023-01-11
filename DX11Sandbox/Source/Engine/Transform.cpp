@@ -250,6 +250,7 @@ void Transform::RecalculateTransform()
     // Then its children
     for(Transform* t : children_)
     {
+        t->SetDirty();
         t->RecalculateTransform();
     }
 

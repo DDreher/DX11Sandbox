@@ -65,6 +65,8 @@ public:
     void Upload(const uint8* data, size_t data_size);
 
     static inline const std::string CBUFFER_NAME_PER_FRAME = "PerFrameData";
+    static inline const std::string CBUFFER_NAME_PER_VIEW= "PerViewData";
+    static inline const std::string CBUFFER_NAME_PER_OBJECT = "PerObjectData";
     static inline const std::string CBUFFER_NAME_PER_INSTANCE = "PerInstanceData";
     static inline const std::string CBUFFER_NAME_PER_MATERIAL= "PerMaterialData";
 

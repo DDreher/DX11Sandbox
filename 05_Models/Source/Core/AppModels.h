@@ -11,7 +11,7 @@ public:
 protected:
     virtual void Init() final;
     virtual void Cleanup() final;
-    virtual void Update(double dt) final;
+    virtual void Update() final;
     virtual void Render() final;
 
     void HandleSDLEvent(const SDL_Event& sdl_event) final;

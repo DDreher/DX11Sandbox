@@ -14,6 +14,7 @@
 #include "imgui_impl_dx11.h"
 #include "imgui_impl_sdl.h"
 
+#include "Core/Application.h"
 #include "Core/FileIO.h"
 #include "Renderer/DX11Util.h"
 #include "Renderer/Texture.h"
@@ -120,7 +121,7 @@ void Mesh::Bind()
 
     gfx::device_context->UpdateSubresource(cbuffer_per_object_.Get(), 0, nullptr, &per_object_data_, 0, 0);
 
-    static constexpr int CBUFFER_PER_OBJECT_SLOT = 1;
+    static constexpr int CBUFFER_PER_OBJECT_SLOT = 2;
     gfx::device_context->VSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
     gfx::device_context->PSSetConstantBuffers(CBUFFER_PER_OBJECT_SLOT, 1, cbuffer_per_object_.GetAddressOf());
 }
@@ -131,9 +132,14 @@ Renderer::Renderer()
     // Even with triple buffering we only need a single render target view
     ComPtr<ID3D11Texture2D> backbuffer;
     DX11_VERIFY(gfx::swapchain->GetBuffer(0, __uuidof(ID3D11Texture2D), &backbuffer));
+
+    D3D11_RENDER_TARGET_VIEW_DESC render_target_view_desc = {};
+    render_target_view_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+    render_target_view_desc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+
     DX11_VERIFY(gfx::device->CreateRenderTargetView(
         backbuffer.Get(), // Ptr to render target
-        nullptr,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
+        &render_target_view_desc,    // Ptr to D3D11_RENDER_TARGET_VIEW_DESC, nullptr to create view of entire subresource at mipmap lvl 0
         &backbuffer_color_view_));
 
     // Create depth/stencil buffer and view
@@ -167,9 +173,6 @@ Renderer::Renderer()
     viewport_.MaxDepth = 1.0f;
     gfx::device_context->RSSetViewports(1, &viewport_);
 
-    // Bind render target views to output merger stage of pipeline
-    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
-    
     // Bind default global render states
     gfx::device_context->VSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
     gfx::device_context->VSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
@@ -186,8 +189,8 @@ Renderer::Renderer()
 
     MaterialDesc material_unlit_textured_desc
     {
-        .vs_path = "assets/shaders/unlit_textured_tint.vs.hlsl",
-        .ps_path = "assets/shaders/unlit_textured_tint.ps.hlsl",
+        .vs_path = "assets/shaders/unlit_textured_tint_vs.hlsl",
+        .ps_path = "assets/shaders/unlit_textured_tint_ps.hlsl",
         .rasterizer_state = RasterizerState::CullCounterClockwise,
         .blend_state = BlendState::Opaque,
         .depth_stencil_state = DepthStencilState::Default
@@ -201,12 +204,12 @@ Renderer::Renderer()
     mesh_.transform_.SetWorldTranslation({ 0.0f, -1.0f, 0.0f });
 
     // Set up cbuffer
-    cbuffer_per_frame_ = MakeUnique<ConstantBuffer>((uint32) sizeof(CBufferPerFrame));
+    cbuffer_per_view_ = MakeUnique<ConstantBuffer>((uint32) sizeof(CBufferPerView));
 
     // Set up camera
     float aspect_ratio = (float) swap_chain_desc.Width / (float) swap_chain_desc.Height;
-    camera_ = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
-    camera_.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
+    gfx::camera = Camera(Vec3(0.0f, 5.0f, -10.0f), aspect_ratio, MathUtils::DegToRad(45.0f), .1f, 1000.0f);
+    gfx::camera.LookAt(Vec3(0.0f, 0.0f, 0.0f) + Vec3(0.0f, 2.0f, 0.0f));
 }
 
 Renderer::~Renderer()
@@ -215,17 +218,15 @@ Renderer::~Renderer()
 
 void Renderer::Render()
 {
-    // Update objects (temporarily in here for testing purposes)
-    static float dt = 1.0f / 60.0f;
     static float time = 0.0f;
-
+    float dt = BaseApplication::Get()->GetTimestep();
     time += dt;
 
-    camera_.UpdateMatrices();
     mesh_.Update(dt);
+    mesh_.material_->SetParam("tint", tint_);
 
-    static Vec3 tint = { 1.0f, 1.0f, 1.0f };
-    mesh_.material_->SetParam("tint", tint);
+    // Bind render target views to output merger stage of pipeline
+    gfx::device_context->OMSetRenderTargets(1, backbuffer_color_view_.GetAddressOf(), backbuffer_depth_view_.Get());
 
     // -------------------------------------------------------------------------------
     // Clear backbuffer
@@ -236,35 +237,23 @@ void Renderer::Render()
     // -------------------------------------------------------------------------------
     // Render scene
 
-    // Update per-frame cbuffer
-    Mat4 mat_vp = camera_.GetViewProjection();
+    // Update per-view cbuffer
+    per_view_data_.mat_view_projection = gfx::camera.GetViewProjection().Transpose();   // CPU: row major, GPU: col major! -> We have to transpose.
 
-    per_frame_data_.mat_view_projection = mat_vp.Transpose();   // CPU: row major, GPU: col major! -> We have to transpose.
-                                                                // See: https://stackoverflow.com/questions/41405994/hlsl-mul-and-d3dxmatrix-order-mismatch
-
-    cbuffer_per_frame_->Upload(reinterpret_cast<uint8*>(&per_frame_data_), sizeof(CBufferPerFrame));
-    gfx::device_context->VSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
-    gfx::device_context->PSSetConstantBuffers(0, 1, cbuffer_per_frame_->buffer_.GetAddressOf());
+    cbuffer_per_view_->Upload(reinterpret_cast<uint8*>(&per_view_data_), sizeof(per_view_data_));
+    static constexpr int SLOT_PER_VIEW = 1;
+    gfx::device_context->VSSetConstantBuffers(SLOT_PER_VIEW, 1, cbuffer_per_view_->buffer_.GetAddressOf());
+    gfx::device_context->PSSetConstantBuffers(SLOT_PER_VIEW, 1, cbuffer_per_view_->buffer_.GetAddressOf());
 
     // Submit draw commands
     mesh_.Render();
+}
 
-    // -------------------------------------------------------------------------------
-    // Imgui
-    ImGui_ImplSDL2_NewFrame();
-    ImGui_ImplDX11_NewFrame();
-    ImGui::NewFrame();
-
+void Renderer::RenderUI()
+{
     ImGui::Begin("Material Parameters");
-    ImGui::SliderFloat3("Tint", reinterpret_cast<float*>(&tint), 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat3("Tint", reinterpret_cast<float*>(&tint_), 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
     ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-
-    // -------------------------------------------------------------------------------
-    // Swap front buffer with backbuffer
-    DX11_VERIFY(gfx::swapchain->Present(1, 0));
 }
 
 IRenderer* CreateRenderer()

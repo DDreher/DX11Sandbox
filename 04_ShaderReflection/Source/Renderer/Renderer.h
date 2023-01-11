@@ -66,6 +66,7 @@ public:
     virtual ~Renderer() override;
 
     virtual void Render() override;
+    virtual void RenderUI() override;
 
 private:
     ComPtr<ID3D11RenderTargetView> backbuffer_color_view_ = nullptr;   // Views for "output" of the swapchain
@@ -84,15 +85,15 @@ private:
     // General render settings
     float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
 
-    // Object data
-    CBufferPerFrame per_frame_data_;
-    UniquePtr<ConstantBuffer> cbuffer_per_frame_;
+    // View data
+    CBufferPerView per_view_data_;
+    UniquePtr<ConstantBuffer> cbuffer_per_view_;
 
     ComPtr<ID3D11Texture2D> texture_ = nullptr;
     ComPtr<ID3D11ShaderResourceView> texture_srv_ = nullptr;
     ComPtr<ID3D11SamplerState> texture_sampler_state_ = nullptr;
 
-    Camera camera_;
+    Vec3 tint_ = { 1.0f, 1.0f, 1.0f };
 };
 
 IRenderer* CreateRenderer();

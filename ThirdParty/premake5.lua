@@ -108,7 +108,6 @@ function AddImGui(is_link_target)
     filter {}
     print("-- Adding ImGui")
     defines { "MODULE_IMGUI" }
-    --includedirs "%{wks.location}/ThirdParty/ImGui/"
     includedirs "$(SolutionDir)/ThirdParty/ImGui/"
 
     if is_link_target then

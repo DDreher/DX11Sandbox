@@ -23,9 +23,9 @@ void StaticMesh::Render() const
     gfx::device_context->DrawIndexed(num_indices, start_idx, offset);
 }
 
-SharedPtr<Model> ModelImporter::LoadFromFile(const ModelDescription& desc)
+SharedPtr<Model> MeshImporter::LoadFromFile(const MeshFileDesc& desc)
 {
-    LOG("Loading model: {}", desc.path);
+    LOG("Loading mesh: {}", desc.path);
     auto root_path = std::filesystem::path(desc.path).parent_path();
 
     SharedPtr<Model> model = MakeShared<Model>();
@@ -68,8 +68,8 @@ SharedPtr<Model> ModelImporter::LoadFromFile(const ModelDescription& desc)
 
         MaterialDesc mat_desc_textured
         {
-            .vs_path = "assets/shaders/unlit_textured.vs.hlsl",
-            .ps_path = "assets/shaders/unlit_textured.ps.hlsl",
+            .vs_path = "assets/shaders/forward_phong_vs.hlsl",
+            .ps_path = "assets/shaders/forward_phong_ps.hlsl",
             .rasterizer_state = RasterizerState::CullCounterClockwise,
             .blend_state = material_blendstate,
             .depth_stencil_state = DepthStencilState::Default
@@ -193,8 +193,8 @@ void Model::Bind()
     per_object_data.mat_world = transform.GetWorldMatrix().Transpose();
     gfx::device_context->UpdateSubresource(cbuffer_per_object.Get(), 0, nullptr, &per_object_data, 0, 0);
 
-    static constexpr int CBUFFER_PER_OBJECT_SLOT = 1;
-    gfx::SetConstantBuffer(cbuffer_per_object.Get(), CBUFFER_PER_OBJECT_SLOT);
+    static constexpr int CBUFFER_SLOT_PER_OBJECT = 2;
+    gfx::SetConstantBuffer(cbuffer_per_object.Get(), CBUFFER_SLOT_PER_OBJECT);
 }
 
 void Model::Render()

@@ -1,5 +1,6 @@
 #include "Camera.h"
 
+#include "Core/Application.h"
 #include "Engine/Input.h"
 
 Camera::Camera(Vec3 pos, float aspect_ratio, float fov, float near_clip, float far_clip)
@@ -68,32 +69,44 @@ void Camera::SetView(const Mat4& view)
 
 const Mat4& Camera::GetViewProjection()
 {
+    if (is_view_projection_dirty_)
+    {
+        RecalculateViewProjection();
+    }
+
     return view_projection_;
 }
 
 void Camera::SetViewProjection(const Mat4& vp)
 {
     view_projection_ = vp;
+    is_view_projection_dirty_ = false;
 }
 
 void Camera::UpdateMatrices()
 {
-    bool is_vp_dirty = is_view_dirty_ || is_projection_dirty_;
+    if(is_view_dirty_)
+    {
+        RecalculateView();
+    }
 
-    RecalculateProjection();
-    RecalculateView();
+    if(is_projection_dirty_)
+    {
+        RecalculateProjection();
+    }
 
-    if(is_vp_dirty)
+    if(is_view_projection_dirty_)
     {
         RecalculateViewProjection();
     }
 }
 
-void Camera::Update(float dt)
+void Camera::Update()
 {
     if(input::IsButtonDown(input::Button::MOUSE_RIGHT) == false)
     {
         input::SetCursorVisibility(true);
+        UpdateMatrices();
         return;
     }
 
@@ -117,7 +130,7 @@ void Camera::Update(float dt)
     }
 
     // Update translation
-    constexpr float max_translation_velocity = 0.2f;
+    constexpr float max_translation_velocity = 2.0f;
     Vec3 movement_dir = Vec3::ZERO;
     if (input::IsKeyDown(SDL_KeyCode::SDLK_w))
     {
@@ -137,10 +150,21 @@ void Camera::Update(float dt)
         movement_dir.x = -1.0f;
     }
 
+    if (input::IsKeyDown(SDL_KeyCode::SDLK_SPACE))
+    {
+        movement_dir.y = 1.0f;
+    }
+    else if (input::IsKeyDown(SDL_KeyCode::SDLK_LCTRL))
+    {
+        movement_dir.y = -1.0f;
+    }
+
     if (movement_dir != Vec3::ZERO)
     {
-        pos_ = pos_ + dt * max_translation_velocity * movement_dir.z * forward_;
-        pos_ = pos_ + dt * max_translation_velocity * movement_dir.x * right_;
+        float delta_time = BaseApplication::Get()->GetTimestep();
+        pos_ = pos_ + delta_time * max_translation_velocity * movement_dir.x * right_;
+        pos_ = pos_ + delta_time * max_translation_velocity * movement_dir.y * up_;
+        pos_ = pos_ + delta_time * max_translation_velocity * movement_dir.z * forward_;
         SetPosition(pos_);
     }
 
@@ -151,15 +175,18 @@ void Camera::RecalculateProjection()
 {
     projection_ = Mat4::PerspectiveFovLH(fov_, aspect_ratio_, near_clip_, far_clip_);
     is_projection_dirty_ = false;
+    is_view_projection_dirty_ = true;
 }
 
 void Camera::RecalculateView()
 {
-    SetView(Mat4::LookAt(pos_, pos_+forward_, up_));
+    SetView(Mat4::LookAt(pos_, pos_ + forward_, up_));
     is_view_dirty_ = false;
+    is_view_projection_dirty_ = true;
 }
 
 void Camera::RecalculateViewProjection()
 {
     view_projection_ = view_ * projection_;
+    is_view_projection_dirty_ = false;
 }

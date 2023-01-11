@@ -50,7 +50,7 @@ struct Vertex
     static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
 };
 
-struct CBufferPerObject
+struct CBufferPerCube
 {
     Mat4 wvp;
     float alpha = 0.0f;
@@ -126,13 +126,11 @@ private:
     float clear_color_[4] = { 100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f, 255.0f/255.0f };
 
     // Object data
-    CBufferPerObject per_object_data_;
+    CBufferPerCube per_object_data_;
 
     ComPtr<ID3D11Texture2D> texture_ = nullptr;
     ComPtr<ID3D11ShaderResourceView> texture_srv_ = nullptr;
     ComPtr<ID3D11SamplerState> texture_sampler_state_ = nullptr;
-
-    Camera camera_;
 
     Vertex cube_textured_vertices_[4*6] =
     {
