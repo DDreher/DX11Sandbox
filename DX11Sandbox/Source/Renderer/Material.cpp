@@ -8,15 +8,25 @@ Material::Material(const MaterialDesc& desc)
     SetBlendState(desc.blend_state);
     SetDepthStencilState(desc.depth_stencil_state);
 
+    static constexpr const char* ENABLE = "1";
     std::vector<ShaderMacro> defines;
+
     if(desc.is_alpha_cutoff)
     {
-        static constexpr const char* ALPHA_CUTOFF = "ALPHA_CUTOFF";
-        static constexpr const char* ENABLE = "1";
-        static constexpr const char* DISABLE = "0";
+        static constexpr const char* ALPHA_CUTOFF_MACRO_NAME = "ALPHA_CUTOFF";
 
         defines.push_back({
-            .name = ALPHA_CUTOFF,
+            .name = ALPHA_CUTOFF_MACRO_NAME,
+            .value = ENABLE
+        });
+    }
+
+    if(desc.is_lit)
+    {
+        static constexpr const char* LIGHTING_MACRO_NAME = "LIGHTING_ENABLED";
+
+        defines.push_back({
+            .name = LIGHTING_MACRO_NAME,
             .value = ENABLE
         });
     }
@@ -131,5 +141,13 @@ void Material::SetParam(const std::string& param_name, float val)
     for (auto& cbuffer : cbuffers_)
     {
         cbuffer->SetFloat(param_name, val);
+    }
+}
+
+void Material::SetParam(const std::string& param_name, int32 val)
+{
+    for (auto& cbuffer : cbuffers_)
+    {
+        cbuffer->SetInt(param_name, val);
     }
 }

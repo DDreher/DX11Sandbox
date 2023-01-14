@@ -8,6 +8,7 @@ struct VertexBufferSlots
     static constexpr uint32 POS = 0;
     static constexpr uint32 NORMALS = 1;
     static constexpr uint32 TEX_COORD = 2;
+    static constexpr uint32 TANGENTS = 3;
 };
 
 class VertexBuffer

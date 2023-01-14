@@ -67,6 +67,22 @@ namespace
         DX11_VERIFY(dxgi_factory->CreateSwapChainForHwnd(gfx::device.Get(), hwnd, &swapchain_desc, nullptr, nullptr, &dxgi_swapchain_1));
         DX11_VERIFY(dxgi_swapchain_1.As(&gfx::swapchain));
     }
+
+    void InitGlobalRenderStates()
+    {
+        gfx::device_context->VSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
+        gfx::device_context->PSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
+        gfx::device_context->VSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
+        gfx::device_context->PSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
+        gfx::device_context->VSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).GetAddressOf());
+        gfx::device_context->PSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).GetAddressOf());
+        gfx::device_context->VSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).GetAddressOf());
+        gfx::device_context->PSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).GetAddressOf());
+        gfx::device_context->VSSetSamplers(4, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicClamp).GetAddressOf());
+        gfx::device_context->PSSetSamplers(4, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicClamp).GetAddressOf());
+        gfx::device_context->VSSetSamplers(5, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicWrap).GetAddressOf());
+        gfx::device_context->PSSetSamplers(5, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicWrap).GetAddressOf());
+    }
 }
 
 namespace gfx
@@ -81,6 +97,7 @@ namespace gfx
         resource_manager = new ResourceManager();
         renderer = CreateRenderer();
 
+        InitGlobalRenderStates();
         gfx::SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY::D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
         IMGUI_CHECKVERSION();

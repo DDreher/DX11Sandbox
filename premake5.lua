@@ -120,7 +120,7 @@ project (project_name)
 
     disablewarnings
     {
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
         "4189"  -- local variable initalized but not referenced
     }
 
@@ -155,7 +155,7 @@ project (project_name)
 
     disablewarnings
     {
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
         "4189"  -- local variable initalized but not referenced
     }
 
@@ -190,7 +190,7 @@ project (project_name)
 
     disablewarnings
     {
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
         "4189"  -- local variable initalized but not referenced
     }
 
@@ -226,7 +226,7 @@ project (project_name)
 
     disablewarnings
     {
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
         "4189"  -- local variable initalized but not referenced
     }
 
@@ -263,7 +263,7 @@ project (project_name)
 
     disablewarnings
     {
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
         "4189"  -- local variable initalized but not referenced
     }
 
@@ -301,7 +301,45 @@ project (project_name)
 
     disablewarnings
     {
-        "4100", -- unreferenced formal paramter
+        "4100", -- unreferenced formal parameter
+        "4189"  -- local variable initalized but not referenced
+    }
+
+    includedirs "$(SolutionDir)/ThirdParty/Assimp/include/"
+    AddAssimp()
+    AddSTB()
+    AddSpdlog()
+    AddSDL2()
+    AddImGui()
+
+    filter "files:**/ThirdParty/**.*"
+        flags "NoPCH"
+        disablewarnings { "4100" }
+
+    filter {}
+
+project_name = "07_NormalMapping"
+print("Generating Project: " .. project_name)
+project (project_name)
+    location (project_dir)
+    targetdir (build_dir)
+    objdir (intermediate_dir)
+    kind "ConsoleApp"
+
+    links { (baseproject_name) }
+    includedirs { ("./" .. baseproject_name .. "/Source/") }
+
+    AddSourceFiles(project_name)
+    includedirs { "$(ProjectDir)" }
+    includedirs { ("$(SolutionDir)/" .. project_name .. "/Source/") }
+
+    pchheader ("AppCore.h")
+    pchsource ("./" .. project_name .. "/Source/Core/AppCore.cpp")
+    forceincludes  { "AppCore.h" }
+
+    disablewarnings
+    {
+        "4100", -- unreferenced formal parameter
         "4189"  -- local variable initalized but not referenced
     }
 

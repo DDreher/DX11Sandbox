@@ -138,15 +138,17 @@ struct Vec3 : public DirectX::XMFLOAT3
 
     Vec3 Cross(const Vec3& v) const;
     float Dot(const Vec3& v) const;
-
     float Length() const;
     float LengthSquared() const;
     Vec3 Normalize();
+
+    static Vec3 Normalize(const Vec3& v);
 
     static float Distance(const Vec3& v1, const Vec3& v2);
     static float DistanceSquared(const Vec3& v1, const Vec3& v2);
 
     static Vec3 Cross(const Vec3& v1, const Vec3& v2);
+    static float Dot(const Vec3& v1, const Vec3& v2);
     static Vec3 Transform(const Vec3& v, const Quat& q);
 
     static const Vec3 ZERO;

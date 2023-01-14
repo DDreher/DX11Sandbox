@@ -70,5 +70,6 @@ struct ResourceManager
     ResourceCache<Texture, TextureDesc> textures;
     ResourceCache<VertexShader, VertexShaderDesc> vertex_shaders;
     ResourceCache<PixelShader, PixelShaderDesc> pixel_shaders;
+    ResourceCache<UncompiledShader, UncompiledShaderDesc> uncompiled_shaders;
     ResourceCache<Material, MaterialDesc> materials;
 };

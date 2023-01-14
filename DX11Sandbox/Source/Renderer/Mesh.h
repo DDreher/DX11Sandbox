@@ -14,6 +14,7 @@ struct VertexData {
     std::vector<uint16> indices;
     std::vector<Vec3> pos;
     std::vector<Vec3> normals;
+    std::vector<Vec3> tangents;
     std::vector<Vec2> uvs;
 };
 
@@ -160,6 +161,7 @@ struct StaticMesh
     SharedPtr<VertexBuffer> pos;
     SharedPtr<VertexBuffer> uv;
     SharedPtr<VertexBuffer> normals;
+    SharedPtr<VertexBuffer> tangents;
     struct Model* model = nullptr;
 };
 
@@ -178,6 +180,7 @@ struct Model
     SharedPtr<VertexBuffer> pos;
     SharedPtr<VertexBuffer> uv;
     SharedPtr<VertexBuffer> normals;
+    SharedPtr<VertexBuffer> tangents;
 };
 
 struct MeshFileDesc
