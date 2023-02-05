@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-std::vector<char> FileIO::ReadFile(const std::string& filename)
+std::vector<uint8> FileIO::ReadFile(const std::string& filename)
 {
     // ate: Start reading at the end of the file -> we can use the read position to determine the file size and allocate a buffer
     // binary : Read the file as binary file (avoid text transformations)
@@ -14,10 +14,10 @@ std::vector<char> FileIO::ReadFile(const std::string& filename)
     }
 
     size_t file_size = (size_t)file.tellg();
-    std::vector<char> buffer(file_size);
+    std::vector<uint8> buffer(file_size);
 
     file.seekg(0);
-    file.read(buffer.data(), file_size);
+    file.read((char*) buffer.data(), file_size);
     file.close();
 
     return buffer;

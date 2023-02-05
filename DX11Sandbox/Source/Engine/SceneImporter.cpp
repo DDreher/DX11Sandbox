@@ -16,7 +16,7 @@ SharedPtr<Entity> SceneImporter::ImportScene(const SceneDescription& scene_desc,
     SharedPtr<Model> model = MakeShared<Model>();
 
     Assimp::Importer ai_importer;
-    uint32 importer_flags = aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_MaxQuality;
+    uint32 importer_flags = aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_CalcTangentSpace;
     const aiScene* ai_scene = ai_importer.ReadFile(scene_desc.path, importer_flags);
     CHECK_MSG(ai_scene != nullptr, "Failed to load mesh from file: {}. \n Error: {}", scene_desc.path, ai_importer.GetErrorString());
 
@@ -92,8 +92,8 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
     aiString blend_mode_string;
     ai_material->Get(AI_MATKEY_GLTF_ALPHAMODE, blend_mode_string);
 
-    int shading_model;
-    ai_material->Get(AI_MATKEY_SHADING_MODEL, shading_model);
+    aiShadingMode shading_mode;
+    ai_material->Get(AI_MATKEY_SHADING_MODEL, shading_mode);
 
     bool is_alpha_cutoff = false;
     float alpha_cutoff = 0.0f;
@@ -127,14 +127,54 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
     Handle<Material> mat_handle = gfx::resource_manager->materials.Create(mat_desc_textured);
     Material* mat = gfx::resource_manager->materials.Get(mat_handle);
 
+    int32 bound_texture_bits = 0;
+
+    aiVector3D base_color;
     aiString diffuse_tex_path;
     if (ai_material->GetTexture(aiTextureType_BASE_COLOR, 0, &diffuse_tex_path) == AI_SUCCESS &&
         diffuse_tex_path.C_Str() != "")
     {
         std::filesystem::path tex_path = root_path / std::filesystem::path(diffuse_tex_path.C_Str());
-        Handle<Texture> tex = gfx::resource_manager->textures.GetHandle(TextureDesc{ tex_path.string() });
-        mat->SetTexture("tex", tex);
+        Handle<Texture> tex = gfx::resource_manager->textures.GetHandle(TextureDesc{ tex_path.string(), TextureSpace::SRGB });
+        mat->SetTexture("tex_diffuse", tex);
+        bound_texture_bits |= DIFFUSE_TEX_BIT;
     }
+    else if(ai_material->Get(AI_MATKEY_BASE_COLOR, base_color) == AI_SUCCESS)
+    {
+        mat->SetParam("base_color", Vec3{ base_color.x, base_color.y, base_color.z });
+    }
+    else 
+    {
+        static const Vec3 DEFAULT_BASE_COLOR = Vec3{ 0.6f, 0.6f, 0.6f };
+        mat->SetParam("base_color", DEFAULT_BASE_COLOR);
+    }
+
+    aiString normal_tex_path;
+    if (ai_material->GetTexture(aiTextureType_NORMALS, 0, &normal_tex_path) == AI_SUCCESS &&
+        normal_tex_path.C_Str() != "")
+    {
+        std::filesystem::path tex_path = root_path / std::filesystem::path(normal_tex_path.C_Str());
+        Handle<Texture> tex = gfx::resource_manager->textures.GetHandle(TextureDesc{ tex_path.string(), TextureSpace::Linear });
+        mat->SetTexture("tex_normal", tex);
+        bound_texture_bits |= NORMAL_TEX_BIT;
+    }
+
+    aiString metallic_roughness_tex_path;
+    if (ai_material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallic_roughness_tex_path) == AI_SUCCESS &&
+        metallic_roughness_tex_path.C_Str() != "")
+    {
+        std::filesystem::path tex_path = root_path / std::filesystem::path(metallic_roughness_tex_path.C_Str());
+        Handle<Texture> tex = gfx::resource_manager->textures.GetHandle(TextureDesc{ tex_path.string(), TextureSpace::Linear });
+        mat->SetTexture("tex_metallic_roughness", tex);
+        bound_texture_bits |= METALLIC_ROUGHNESS_TEX_BIT;
+    }
+    else
+    {
+        mat->SetParam("roughness", .8f);
+    }
+
+    mat->SetParam("specular_color", Vec3{ 1.0f, 1.0f, 1.0f });
+    mat->SetParam("bound_texture_bits", bound_texture_bits);
 
     model->materials_.push_back(mat_handle);
 
@@ -143,7 +183,11 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
     for (uint32 i = 0; i < ai_mesh->mNumFaces; ++i)
     {
         const aiFace& face = ai_mesh->mFaces[i];
-        CHECK(face.mNumIndices == 3);
+        if(face.mNumIndices != 3)
+        {
+            LOG_WARN("Incomplete triangle in mesh: {}", ai_mesh->mName.C_Str());
+        }
+
         vertex_data.indices.push_back(num_model_vertices + face.mIndices[0]);
         vertex_data.indices.push_back(num_model_vertices + face.mIndices[1]);
         vertex_data.indices.push_back(num_model_vertices + face.mIndices[2]);
@@ -161,6 +205,23 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
 
         const aiVector3D& uv = ai_mesh->HasTextureCoords(0) ? ai_mesh->mTextureCoords[0][vertex_id] : aiVector3D(0.0f, 0.0f, 0.0f);
         vertex_data.uvs.push_back({ uv.x, uv.y });
+
+        Vec3 tangent = Vec3::ZERO;
+        if(ai_mesh->HasTangentsAndBitangents())
+        {
+            const aiVector3D& ai_tangent = ai_mesh->mTangents[vertex_id];
+            const aiVector3D& ai_bitangent = ai_mesh->mBitangents[vertex_id];
+            tangent = { ai_tangent.x, ai_tangent.y, ai_tangent.z };
+            Vec3 bitangent = { ai_bitangent.x, ai_bitangent.y, ai_bitangent.z };
+            
+            // Some models have mirrored UVs -> We have to fix the tangent
+            if (Vec3::Dot(Vec3::Cross({ normal.x, normal.y, normal.z }, tangent), bitangent) < 0.0f)
+            {
+                tangent = tangent * -1.0;
+            }
+        } 
+
+        vertex_data.tangents.push_back({ tangent.x, tangent.y, tangent.z });
 
         num_model_vertices++;
     }
@@ -180,16 +241,18 @@ SharedPtr<Model> SceneImporter::ProcessMesh(const SceneDescription& scene_desc, 
     cbuffer_desc.CPUAccessFlags = 0;
     DX11_VERIFY(gfx::device->CreateBuffer(&cbuffer_desc, nullptr, &model->cbuffer_per_object));
 
-    model->index_buffer = MakeShared<IndexBuffer>(vertex_data.indices.data(), (uint32)vertex_data.indices.size());
-    model->pos = MakeShared<VertexBuffer>(vertex_data.pos.data(), (uint32)vertex_data.pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
-    model->normals = MakeShared<VertexBuffer>(vertex_data.normals.data(), (uint32)vertex_data.normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
-    model->uv = MakeShared<VertexBuffer>(vertex_data.uvs.data(), (uint32)vertex_data.uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
+    model->index_buffer = MakeShared<IndexBuffer>(vertex_data.indices.data(), (uint32) vertex_data.indices.size());
+    model->pos = MakeShared<VertexBuffer>(vertex_data.pos.data(), (uint32) vertex_data.pos.size(), sizeof(Vec3), VertexBufferSlots::POS);
+    model->normals = MakeShared<VertexBuffer>(vertex_data.normals.data(), (uint32) vertex_data.normals.size(), sizeof(Vec3), VertexBufferSlots::NORMALS);
+    model->tangents = MakeShared<VertexBuffer>(vertex_data.tangents.data(), (uint32) vertex_data.tangents.size(), sizeof(Vec3), VertexBufferSlots::TANGENTS);
+    model->uv = MakeShared<VertexBuffer>(vertex_data.uvs.data(), (uint32) vertex_data.uvs.size(), sizeof(Vec2), VertexBufferSlots::TEX_COORD);
 
     for (StaticMesh& mesh : model->meshes_)
     {
         mesh.index_buffer = model->index_buffer;
         mesh.pos = model->pos;
         mesh.normals = model->normals;
+        mesh.tangents = model->tangents;
         mesh.uv = model->uv;
     }
 

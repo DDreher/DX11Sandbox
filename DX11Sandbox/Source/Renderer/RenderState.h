@@ -73,7 +73,9 @@ enum class SamplerState : uint8
     PointClamp = 0,
     PointWrap,
     LinearClamp,
-    LinearWrap
+    LinearWrap,
+    AnisotropicClamp,
+    AnisotropicWrap
 };
 MAKE_HASHABLE(D3D11_SAMPLER_DESC);
 

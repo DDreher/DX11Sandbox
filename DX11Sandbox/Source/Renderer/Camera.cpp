@@ -13,7 +13,7 @@ Camera::Camera(Vec3 pos, float aspect_ratio, float fov, float near_clip, float f
 
 void Camera::LookAt(Vec3 target)
 {
-    forward_ = target - pos_;
+    forward_ = Vec3::Normalize(target - pos_);
     right_ = Vec3::Cross(Vec3::UP, forward_);
     is_view_dirty_ = true;
 }
@@ -124,7 +124,7 @@ void Camera::Update()
         Quat rot_yaw = Quat::FromAxisAngle(Vec3::UP, yaw_delta);
         Quat rot_combined = Quat::Normalize(rot_pitch * rot_yaw);
 
-        forward_ = Vec3::Transform(forward_, rot_combined);
+        forward_ = Vec3::Normalize(Vec3::Transform(forward_, rot_combined));
         right_ = Vec3::Cross(Vec3::UP, forward_);
         is_view_dirty_ = true;
     }

@@ -73,6 +73,23 @@ bool ConstantBuffer::SetFloat(const std::string& param_name, float val)
     return false;
 }
 
+bool ConstantBuffer::SetInt(const std::string& param_name, int32 val)
+{
+    CHECK(data_ != nullptr);
+
+    auto it = param_map_.find(param_name);
+    if (it != param_map_.end())
+    {
+        const CBufferParam& param = it->second;
+        CHECK(param.type == ParameterType::Int);
+        std::memcpy(data_ + param.offset, &val, sizeof(int32));
+        is_dirty_ = true;
+        return true;
+    }
+
+    return false;
+}
+
 bool ConstantBuffer::SetVec3(const std::string& param_name, Vec3 val)
 {
     CHECK(data_ != nullptr);

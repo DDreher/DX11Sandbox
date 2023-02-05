@@ -295,6 +295,52 @@ void RenderStateCache::InitCommonSamplerStates()
         SetDebugName(state.Get(), "LINEAR_WRAP");
         sampler_state_cache_[desc] = state;
     }
+
+    // ANISOTROPIC_CLAMP
+    {
+        ComPtr<ID3D11SamplerState> state;
+        D3D11_SAMPLER_DESC desc = {};
+        desc.Filter = D3D11_FILTER_ANISOTROPIC;
+        desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        desc.MipLODBias = 0.0f;
+        desc.MaxAnisotropy = 16;
+        desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        desc.BorderColor[0] = 0.0f;
+        desc.BorderColor[1] = 0.0f;
+        desc.BorderColor[2] = 0.0f;
+        desc.BorderColor[3] = 0.0f;
+        desc.MinLOD = -FLT_MAX;
+        desc.MaxLOD = FLT_MAX;
+        common_sampler_state_descriptors_[SamplerState::AnisotropicClamp] = desc;
+        DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "ANISOTROPIC_CLAMP");
+        sampler_state_cache_[desc] = state;
+    }
+
+    // ANISOTROPIC_WRAP
+    {
+        ComPtr<ID3D11SamplerState> state;
+        D3D11_SAMPLER_DESC desc = {};
+        desc.Filter = D3D11_FILTER_ANISOTROPIC;
+        desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.MipLODBias = 0.0f;
+        desc.MaxAnisotropy = 16;
+        desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        desc.BorderColor[0] = 0.0f;
+        desc.BorderColor[1] = 0.0f;
+        desc.BorderColor[2] = 0.0f;
+        desc.BorderColor[3] = 0.0f;
+        desc.MinLOD = -FLT_MAX;
+        desc.MaxLOD = FLT_MAX;
+        common_sampler_state_descriptors_[SamplerState::AnisotropicWrap] = desc;
+        DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "ANISOTROPIC_WRAP");
+        sampler_state_cache_[desc] = state;
+    }
 }
 
 ComPtr<ID3D11BlendState> RenderStateCache::GetBlendState(const D3D11_BLEND_DESC& desc)

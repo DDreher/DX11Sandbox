@@ -10,8 +10,9 @@ void StaticMesh::Bind() const
 {
     index_buffer->Bind();
     pos->Bind();
-    uv->Bind();
     normals->Bind();
+    tangents->Bind();
+    uv->Bind();
 
     // TODO: ... Why do I store the materials in the model again?
     Material* material = gfx::resource_manager->materials.Get(model->materials_[material_slot]);
