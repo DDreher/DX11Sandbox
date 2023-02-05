@@ -86,6 +86,7 @@ void BaseApplication::DestroyWindow()
 
 void BaseApplication::Update()
 {
+    input::BeginNewFrame();
     input::ResetMousePosDelta();    // Have to manually reset, otherwise we only update on mouse moved event.
 
     SDL_Event sdl_event;

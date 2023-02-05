@@ -6,7 +6,13 @@ namespace
     Vec2 mouse_pos = Vec2::ZERO;
     Vec2 mouse_pos_delta = Vec2::ZERO;
     std::unordered_map<SDL_Keycode, bool> keys_pressed;
+    std::unordered_map<SDL_Keycode, bool> prev_keys_pressed;
     std::unordered_map<input::Button, bool> buttons_pressed;
+}
+
+void input::BeginNewFrame()
+{
+    prev_keys_pressed = keys_pressed;
 }
 
 void input::HandleSDLEvent(const SDL_Event& sdl_event)
@@ -48,6 +54,16 @@ void input::HandleSDLEvent(const SDL_Event& sdl_event)
 bool input::IsKeyDown(const SDL_Keycode& key_code)
 {
     return keys_pressed[key_code];
+}
+
+bool input::IsKeyUp(const SDL_Keycode& key_code)
+{
+    return !keys_pressed[key_code];
+}
+
+bool input::IsKeyReleased(const SDL_Keycode& key_code)
+{
+    return prev_keys_pressed[key_code] && !keys_pressed[key_code];
 }
 
 bool input::IsButtonDown(Button button)

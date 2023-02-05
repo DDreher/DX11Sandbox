@@ -18,6 +18,7 @@ enum class ParameterType
 static inline const std::unordered_map<ParameterType, size_t> PARAMETER_TYPE_TO_SIZE_TABLE
 {
     { ParameterType::Float, sizeof(float)},
+    { ParameterType::Int, sizeof(int32)},
     { ParameterType::Vec3, sizeof(Vec3)},
     { ParameterType::Mat4, sizeof(Mat4)},
 };
@@ -44,7 +45,6 @@ struct CBufferBindingDesc
         return name == other.name && slot == other.slot && param_map == other.param_map;
     }
 };
-
 MAKE_HASHABLE(CBufferBindingDesc, t.name, t.slot);
 
 class ConstantBuffer
@@ -57,6 +57,7 @@ public:
     void Init();
 
     bool SetFloat(const std::string& param_name, float val);
+    bool SetInt(const std::string& param_name, int32 val);
     bool SetVec3(const std::string& param_name, Vec3 val);
     bool SetMat4(const std::string& param_name, Mat4 val);
     void SetData(const uint8* data, size_t data_size);

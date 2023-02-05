@@ -1,4 +1,4 @@
-#include "AppLighting.h"
+#include "AppNormalMapping.h"
 
 #include "backends/imgui_impl_sdl.h"
 #include "SDL_events.h"
@@ -9,12 +9,12 @@
 
 #include "Renderer/Renderer.h"
 
-AppLighting::AppLighting()
+AppNormalMapping::AppNormalMapping()
 {
-    application_name_ = "Lighting";
+    application_name_ = "Normal Mapping";
 }
 
-void AppLighting::Init()
+void AppNormalMapping::Init()
 {
     BaseApplication::Init();
 
@@ -36,7 +36,7 @@ void AppLighting::Init()
         SharedPtr<Entity> entity = MakeShared<Entity>();
         entity->name_ = "Directional Light";
         DirectionalLightComponent* directional_light = entity->AddComponent<DirectionalLightComponent>();
-        directional_light->brightness_ = 0.8f;
+        directional_light->brightness_ = 0.3f;
         entity->transform_->SetWorldRotation(Quat::FromAxisAngle(Vec3::RIGHT, 45.0f));
         world.Add(entity);
     }
@@ -52,42 +52,59 @@ void AppLighting::Init()
             .path = model_path,
             .import_correction_transform = import_correction_transform
         };
+
         SharedPtr<Entity> sphere = SceneImporter::ImportScene(scene_desc, world);
         sphere->name_ = "Point Light";
-        PointLightComponent* light = sphere->AddComponent<PointLightComponent>();
-        light->color_ = { 0.0f, 0.0f, 1.0f };
-    }
+        sphere->transform_->SetWorldScaling({ 0.1f, 0.1f, 0.1f });
+        StaticMeshComponent* mesh_component = sphere->GetChild(0)->GetComponent<StaticMeshComponent>();
 
-    {
-        String model_path = "assets/meshes/sphere.gltf";
-        Transform import_correction_transform;
-        import_correction_transform.SetWorldTranslation({ 0.0f, 1.0f, -5.0f });
-        import_correction_transform.SetWorldScaling({ 0.33f, 0.33f, 0.33f });
-
-        SceneDescription scene_desc
+        // Override material with an unlit one to "fake" emission :D
+        MaterialDesc unlit_mat_desc
         {
-            .path = model_path,
-            .import_correction_transform = import_correction_transform
+            .vs_path = "assets/shaders/forward_phong_vs.hlsl",
+            .ps_path = "assets/shaders/forward_phong_ps.hlsl",
+            .rasterizer_state = RasterizerState::CullCounterClockwise,
+            .blend_state = BlendState::Opaque,
+            .depth_stencil_state = DepthStencilState::Default,
+            .is_alpha_cutoff = false,
+            .is_lit = false
         };
-        SharedPtr<Entity> sphere = SceneImporter::ImportScene(scene_desc, world);
-        sphere->name_ = "Spot Light";
-        SpotLightComponent* light = sphere->AddComponent<SpotLightComponent>();
-        light->color_ = { 1.0f, 0.0f, 0.0f };
-        light->cone_angle_ = 33.33f;
+
+        Handle<Material> unlit_mat_handle = gfx::resource_manager->materials.Create(unlit_mat_desc);
+        Material* unlit_material = gfx::resource_manager->materials.Get(unlit_mat_handle);
+        CHECK(unlit_material != nullptr);
+        unlit_material->SetParam("base_color", Vec3{ 1.0f, 1.0f, 1.0f });
+        unlit_material->SetParam("bound_texture_bits", 0);
+        mesh_component->model_->materials_[0] = unlit_mat_handle;
+
+        PointLightComponent* light = sphere->GetChild(0)->AddComponent<PointLightComponent>();
+        light->color_ = { 0.0f, 0.0f, 1.0f };
     }
 }
 
-void AppLighting::Cleanup()
+void AppNormalMapping::Cleanup()
 {
     BaseApplication::Cleanup();
 }
 
-void AppLighting::Update()
+void AppNormalMapping::Update()
 {
     BaseApplication::Update();
+
+    for (auto entity : world.GetEntities())
+    {
+        // Update material base color for light representations
+        StaticMeshComponent* mesh_component = entity->GetComponent<StaticMeshComponent>();
+        PointLightComponent* light_component = entity->GetComponent<PointLightComponent>();
+        if (light_component != nullptr && mesh_component != nullptr)
+        {
+            Material* material = gfx::resource_manager->materials.Get(mesh_component->model_->materials_[0]);
+            material->SetParam("base_color", light_component->color_);
+        }
+    }
 }
 
-void AppLighting::Render()
+void AppNormalMapping::Render()
 {
     for (auto entity : world.GetEntities())
     {
@@ -151,7 +168,7 @@ void AppLighting::Render()
     BaseApplication::Render();
 }
 
-void AppLighting::RenderUI()
+void AppNormalMapping::RenderUI()
 {
     BaseApplication::RenderUI();
 
@@ -163,7 +180,6 @@ void AppLighting::RenderUI()
         {
             ImGui::Text("%s", e->name_.c_str());
             ImGui::Checkbox("enabled", &l->is_enabled_);
-            //ImGui::SliderFloat3("LightDir", reinterpret_cast<float*>(&e->transform_->), -10.0f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
             ImGui::SliderFloat(fmt::format("Brightness##{}", e->name_).c_str(), reinterpret_cast<float*>(&l->brightness_),
                 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
             ImGui::ColorPicker3("LightColor", reinterpret_cast<float*>(&l->color_));
@@ -175,7 +191,7 @@ void AppLighting::RenderUI()
             ImGui::Text("%s", e->name_.c_str());
             ImGui::Checkbox(fmt::format("is_enabled##{}", e->name_).c_str(), &l->is_enabled_);
             Vec3 pos = e->transform_->GetWorldTranslation();
-            ImGui::SliderFloat3(fmt::format("Pos##{}", e->name_).c_str(), reinterpret_cast<float*>(&pos), -15.0f, 15.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+            ImGui::SliderFloat3(fmt::format("Pos##{}", e->name_).c_str(), reinterpret_cast<float*>(&pos), -10.0f, 10.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
             e->transform_->SetWorldTranslation(pos);
             ImGui::SliderFloat(fmt::format("Brightness##{}", e->name_).c_str(), reinterpret_cast<float*>(&l->brightness_),
                 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
@@ -215,7 +231,7 @@ void AppLighting::RenderUI()
     ImGui::End();
 }
 
-void AppLighting::HandleSDLEvent(const SDL_Event& sdl_event)
+void AppNormalMapping::HandleSDLEvent(const SDL_Event& sdl_event)
 {
     BaseApplication::HandleSDLEvent(sdl_event);
     ImGui_ImplSDL2_ProcessEvent(&sdl_event);

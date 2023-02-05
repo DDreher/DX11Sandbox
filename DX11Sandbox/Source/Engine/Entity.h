@@ -41,6 +41,13 @@ public:
     {
         CHECK(entity != nullptr);
         transform_->AddChild(entity->transform_);
+        children_.push_back(entity);
+    }
+
+    Entity* GetChild(uint32 idx)
+    {
+        CHECK(idx < children_.size());
+        return children_[idx];
     }
 
     String name_;
@@ -48,4 +55,5 @@ public:
 
 private:
     std::vector<IComponent*> components_;
+    std::vector<Entity*> children_;
 };

@@ -29,7 +29,7 @@ Tl;dr: I know the code's dirty ;) Don't judge me.
 <img src="doc/images/01_hello_triangle.png?raw=true" alt="Image of Subproject: 01-HelloTriangle" height="320px">
 </p>
 
-Explored topics:
+**Explored topics:**
 * Setting up a bare minimum render pipeline
 * Write, load and compile bare minimum shaders
 * Draw a colored triangle
@@ -40,7 +40,7 @@ Explored topics:
 <img src="doc/images/02_textured_cube.png?raw=true" alt="Image of Subproject: 02-TexturedCube" height="320px">
 </p>
 
-Explored topics:
+**Explored topics:**
 * Rendering of meshes from in-memory data
 * Usage of constant buffers
 * Texture bindings
@@ -52,7 +52,7 @@ Explored topics:
 <img src="doc/images/03_mesh.png?raw=true" alt="Image of Subproject: 03-Mesh" height="320px">
 </p>
 
-Explored topics:
+**Explored topics:**
 * Loading of meshes from files using Assimp
 * Revisited quaternions to calculate mesh transforms
 * Further abstractions of graphics resources (shaders, textures, buffers, materials,...)
@@ -61,7 +61,7 @@ Explored topics:
 
 <video src="https://user-images.githubusercontent.com/4201607/173398224-4324bcdb-3b06-40d1-afee-6ad67fac1632.mp4" controls="controls" height="320px"></video>
 
-Explored topics:
+**Explored topics:**
 * Setting up material parameters via shader reflection (input layouts, cbuffers, resource bindings,...)
 * Exposing an API to change material parameters during runtime
 * Rendering a simple UI with Imgui
@@ -72,7 +72,7 @@ Explored topics:
 <img src="doc/images/05_models.png?raw=true" alt="Image of Subproject: 05-Models" height="320px">
 </p>
 
-Explored topics:
+**Explored topics:**
 * Import of glTF models using Assimp (using Sponza as showcase)
 * Building a scene graph
 * Using resource pools with handles instead of smart pointers
@@ -87,11 +87,23 @@ Explored topics:
 <img src="doc/images/06_phong.png?raw=true" alt="Image of Subproject: 06-Lighting" height="320px">
 </p>
 
-Explored topics:
+**Explored topics:**
 * (Blinn-)Phong reflection model
 * Directional lights
 * Spot lights
 * Point lights
+
+### [07 - Normal Mapping](07_NormalMapping/Source/)
+
+<p align="left">
+<img src="doc/images/07_normal_mapping.png?raw=true" alt="Image of Subproject: 07-NormalMapping" height="320px">
+</p>
+
+**Explored topics:**
+* Normal Mapping
+* TBN Matrices
+* Fixing tangents on models with mirrored UVs
+* Automatically generating mip maps during run-time
 
 ## Dependencies
 

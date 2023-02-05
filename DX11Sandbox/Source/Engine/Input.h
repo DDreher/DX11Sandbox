@@ -13,9 +13,12 @@ namespace input
         NUM
     };
 
+    void BeginNewFrame();
     void HandleSDLEvent(const SDL_Event& sdl_event);
 
     bool IsKeyDown(const SDL_Keycode& key_code);
+    bool IsKeyUp(const SDL_Keycode& key_code);
+    bool IsKeyReleased(const SDL_Keycode& key_code);
 
     void ResetMousePosDelta();
     Vec2 GetMousePos();

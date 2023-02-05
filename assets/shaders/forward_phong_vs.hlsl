@@ -22,6 +22,7 @@ struct VSInput
     float3 pos : POSITION0;
     float3 normal : NORMAL0;
     float2 uv : UV0;
+    float3 tangents : TANGENTS0;
 };
 
 struct VSOutput
@@ -29,6 +30,7 @@ struct VSOutput
     float4 pos_cs : SV_POSITION;
     float4 pos_ws : POSITION0;
     float4 normal_ws : NORMAL0;
+    float4 tangents_ws : TANGENT0;
     float2 uv : UV0;
 };
 
@@ -42,6 +44,7 @@ VSOutput Main(VSInput input)
     output.pos_ws = mul(float4(input.pos, 1.0f), mat_world);
     output.normal_ws = mul(float4(input.normal, 0.0f), mat_world);  // If we want to support non-uniform scalings we'll need a normal matrix.
                                                                     // Or: https://lxjk.github.io/2017/10/01/Stop-Using-Normal-Matrix.html
+    output.tangents_ws = mul(float4(input.tangents, 0.0f), mat_world);
     output.uv = input.uv;
     return output;
 }

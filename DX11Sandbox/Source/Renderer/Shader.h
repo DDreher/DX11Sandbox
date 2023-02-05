@@ -24,7 +24,7 @@ MAKE_HASHABLE(ShaderMacro, t.name, t.value);
 
 struct ShaderCompiler
 {
-    static HRESULT Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const std::vector<ShaderMacro>& defines, const char* entry_point,
+    static HRESULT Compile(const std::string& asset_path, const std::vector<uint8>& shader_bytes, const std::vector<ShaderMacro>& defines, const char* entry_point,
         const char* shader_target, ComPtr<ID3DBlob>& out_shader_blob);
 };
 
@@ -44,6 +44,46 @@ struct TextureBindingDesc
     UINT slot;
 };
 
+struct UncompiledShaderDesc
+{
+    std::string path;
+
+    bool operator==(const UncompiledShaderDesc& other) const
+    {
+        return path == other.path;
+    }
+};
+
+namespace std
+{
+    template<>
+    struct hash<UncompiledShaderDesc>
+    {
+        std::size_t operator()(const UncompiledShaderDesc& desc) const
+        {
+            std::size_t seed = 0;
+            Hash::HashCombine(seed, desc.path);
+            return seed;
+        }
+    };
+}
+
+class UncompiledShader
+{
+public:
+    UncompiledShader(const UncompiledShaderDesc& desc) 
+        : asset_path_(desc.path)
+    {
+        CHECK(!asset_path_.empty());
+        CHECK(LoadFromFile(asset_path_));
+    }
+
+    bool LoadFromFile(const std::string asset_path);
+
+    std::string asset_path_;
+    std::vector<uint8> shader_code_;
+};
+
 class ShaderBase
 {
     friend class Material;
@@ -52,8 +92,7 @@ public:
     ShaderBase(const std::string& asset_path, EShaderType shader_type, const std::vector<ShaderMacro>& defines);
     virtual ~ShaderBase();
 
-    bool LoadFromFile(const std::string asset_path);
-    bool Compile(const std::vector<char>& bytes);
+    bool Compile(const std::vector<uint8>& bytes);
 
 protected:
     virtual void Reflect();
@@ -63,8 +102,6 @@ protected:
     ComPtr<ID3DBlob> shader_blob_;
     ComPtr<ID3D11ShaderReflection> shader_reflection_;
     D3D11_SHADER_DESC shader_desc_;
-
-    std::vector<char> shader_code_;
 
     std::vector<CBufferBindingDesc> cbuffer_bindings_;
     std::vector<TextureBindingDesc> texture_bindings_;

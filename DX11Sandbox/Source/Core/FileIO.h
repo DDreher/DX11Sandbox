@@ -2,5 +2,5 @@
 
 struct FileIO
 {
-    static std::vector<char> ReadFile(const std::string& filename);
+    static std::vector<uint8> ReadFile(const std::string& filename);
 };

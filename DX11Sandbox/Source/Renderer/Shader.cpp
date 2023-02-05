@@ -74,8 +74,7 @@ namespace
     }
 }
 
-
-HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector<char>& shader_bytes, const std::vector<ShaderMacro>& defines, const char* entry_point,
+HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector<uint8>& shader_bytes, const std::vector<ShaderMacro>& defines, const char* entry_point,
     const char* shader_target, ComPtr<ID3DBlob>& out_shader_blob)
 {
     CHECK(shader_bytes.size() > 0);
@@ -129,19 +128,7 @@ HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector
 
 //////////////////////////////////////////////////////////////////////////
 
-ShaderBase::ShaderBase(const std::string& asset_path, EShaderType shader_type, const std::vector<ShaderMacro>& defines)
-    : asset_path_(asset_path), shader_type_(shader_type), defines_(defines)
-{
-    LoadFromFile(asset_path);
-    Compile(shader_code_);
-}
-
-ShaderBase::~ShaderBase()
-{
-    LOG("Destroy shader: {}", asset_path_);
-}
-
-bool ShaderBase::LoadFromFile(const std::string asset_path)
+bool UncompiledShader::LoadFromFile(const std::string asset_path)
 {
     LOG("Loading shader: {}", asset_path);
     asset_path_ = asset_path;
@@ -149,7 +136,23 @@ bool ShaderBase::LoadFromFile(const std::string asset_path)
     return true;
 }
 
-bool ShaderBase::Compile(const std::vector<char>& bytes)
+//////////////////////////////////////////////////////////////////////////
+
+ShaderBase::ShaderBase(const std::string& asset_path, EShaderType shader_type, const std::vector<ShaderMacro>& defines)
+    : asset_path_(asset_path), shader_type_(shader_type), defines_(defines)
+{
+    Handle<UncompiledShader> shader_handle = gfx::resource_manager->uncompiled_shaders.GetHandle({ asset_path });
+    UncompiledShader* uncompiled_shader = gfx::resource_manager->uncompiled_shaders.Get(shader_handle);
+    CHECK(uncompiled_shader != nullptr);
+    Compile(uncompiled_shader->shader_code_);
+}
+
+ShaderBase::~ShaderBase()
+{
+    LOG("Destroy shader: {}", asset_path_);
+}
+
+bool ShaderBase::Compile(const std::vector<uint8>& bytes)
 {
     const auto it = ::SHADER_TARGET_MAP.find(shader_type_);
     CHECK_MSG(it != ::SHADER_TARGET_MAP.end(), "Tried to compile unknown shader type");
@@ -243,9 +246,16 @@ void ShaderBase::Reflect()
                     }
                     else if (var_type_desc.Class == D3D_SHADER_VARIABLE_CLASS::D3D_SVC_SCALAR)
                     {
-
                         // TODO: Check var_type_desc.Type for float / int etc
-                        cbuffer_param.type = ParameterType::Float;
+                        if(var_type_desc.Type == D3D_SHADER_VARIABLE_TYPE::D3D_SVT_FLOAT)
+                        {
+                            cbuffer_param.type = ParameterType::Float;
+                        }
+                        else if(var_type_desc.Type == D3D_SHADER_VARIABLE_TYPE::D3D_SVT_INT ||
+                            var_type_desc.Type == D3D_SHADER_VARIABLE_TYPE::D3D_SVT_UINT)
+                        {
+                            cbuffer_param.type = ParameterType::Int;
+                        }
                     }
                     else
                     {

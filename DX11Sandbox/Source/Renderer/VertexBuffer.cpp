@@ -9,6 +9,7 @@ VertexBuffer::VertexBuffer(void* data, uint32 size, size_t bytes_per_element, ui
     : stride_((uint32) bytes_per_element),
     slot_(slot)
 {
+    CHECK(size > 0);
     D3D11_BUFFER_DESC vertex_buffer_desc = {};
     vertex_buffer_desc.Usage = D3D11_USAGE_DEFAULT;   // Read / Write access
     vertex_buffer_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;

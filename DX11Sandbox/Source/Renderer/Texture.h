@@ -1,9 +1,17 @@
 #pragma once
 #include "Renderer/RenderState.h"
 
+enum class TextureSpace
+{
+    Linear,
+    SRGB
+};
+
 struct TextureDesc
 {
     String file_path;
+    TextureSpace texture_space = TextureSpace::SRGB;
+    bool generateMipMaps = true;
 
     bool operator==(const TextureDesc& other) const
     {
@@ -29,9 +37,13 @@ public:
         return b;
     }
 
-    void Create(void* data);
+    static uint32 CalcNumMipLevels(uint32 width, uint32 height);
+
+    void Create(uint8* data);
 
     std::string file_path_;
+    TextureSpace texture_space_ = TextureSpace::SRGB;
+    bool hasMipMaps_ = false;
     int32 num_channels_ = -1;
     int32 width_ = -1;
     int32 height_ = -1;

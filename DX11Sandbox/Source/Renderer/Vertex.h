@@ -80,6 +80,30 @@ struct VertexPosUVNormals
 };
 MAKE_HASHABLE(VertexPosUVNormals, t.pos, t.normal, t.uv);
 
+struct VertexPosUVNormalsTangents
+{
+    bool operator==(VertexPosUVNormalsTangents const& other) const
+    {
+        return pos == other.pos && uv == other.uv && normal == other.normal;
+    }
+
+    Vec3 pos;
+    Vec3 normal;
+    Vec2 uv;
+    Vec3 tangent;
+
+    static inline const D3D11_INPUT_ELEMENT_DESC LAYOUT[] =
+    {
+        { "POSITION", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 0 /*slot_idx*/, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 1 /*slot_idx*/, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "UV", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32_FLOAT, 2 /*slot_idx*/, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TANGENT", 0, DXGI_FORMAT::DXGI_FORMAT_R32G32B32_FLOAT, 3 /*slot_idx*/, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+    };
+
+    static inline const uint32 NUM_ELEMENTS = ARRAYSIZE(LAYOUT);
+};
+MAKE_HASHABLE(VertexPosUVNormalsTangents, t.pos, t.normal, t.uv, t.tangent);
+
 struct VertexPosColor
 {
     Vec3 pos;
