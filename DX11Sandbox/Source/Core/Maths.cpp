@@ -28,7 +28,7 @@ Vec3 operator*(const Vec3& v, const Mat4& m)
 
     Vec3 out;
     XMStoreFloat3(&out, result);
-    return result;
+    return out;
 }
 
 Vec3 Vec3::Cross(const Vec3& v) const
@@ -132,6 +132,39 @@ Vec3 Vec3::Transform(const Vec3& v, const Quat& q)
 
 //////////////////////////////////////////////////////////////////////////
 
+Vec4 operator*(const Vec4& v, const Mat4& m)
+{
+    const XMVECTOR vec = XMLoadFloat4(&v);
+    const XMMATRIX mat = XMLoadFloat4x4(&m);
+    const XMVECTOR result = XMVector4Transform(vec, mat);
+
+    Vec4 out;
+    XMStoreFloat4(&out, result);
+    return out;
+}
+
+Vec4 operator+(const Vec4& v1, const Vec4& v2)
+{
+    const XMVECTOR xm_v1 = XMLoadFloat4(&v1);
+    const XMVECTOR xm_v2 = XMLoadFloat4(&v2);
+    const XMVECTOR xm_out = XMVectorAdd(xm_v1, xm_v2);
+
+    Vec4 out;
+    XMStoreFloat4(&out, xm_out);
+    return out;
+}
+
+Vec4 operator-(const Vec4& v1, const Vec4& v2)
+{
+    const XMVECTOR xm_v1 = XMLoadFloat4(&v1);
+    const XMVECTOR xm_v2 = XMLoadFloat4(&v2);
+    const XMVECTOR xm_out = XMVectorSubtract(xm_v1, xm_v2);
+
+    Vec4 out;
+    XMStoreFloat4(&out, xm_out);
+    return out;
+}
+
 Vec4 Vec4::Transform(const Vec4& v, const Quat& q)
 {
     const XMVECTOR xm_v = XMLoadFloat4(&v);
@@ -150,6 +183,20 @@ Vec4 Vec4::Normalize()
     const XMVECTOR xm_out = XMVector4Normalize(xm_v);
     XMStoreFloat4(this, xm_out);
     return *this;
+}
+
+float Vec4::Length() const
+{
+    const XMVECTOR xm_v = XMLoadFloat4(this);
+    const XMVECTOR xm_out = XMVector4Length(xm_v);
+    return XMVectorGetX(xm_out);
+}
+
+float Vec4::LengthSquared() const
+{
+    const XMVECTOR xm_v = XMLoadFloat4(this);
+    const XMVECTOR xm_out = XMVector4LengthSq(xm_v);
+    return XMVectorGetX(xm_out);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -242,6 +289,16 @@ Mat4 Mat4::LookAt(const Vec3& origin, const Vec3& target, const Vec3& up)
 Mat4 Mat4::PerspectiveFovLH(float fov_y_rad, float aspect_ratio, float near_z, float far_z)
 {
     return XMMatrixPerspectiveFovLH(fov_y_rad, aspect_ratio, near_z, far_z);
+}
+
+Mat4 Mat4::OrthographicLH(float view_width, float view_height, float near_z, float far_z)
+{
+    return XMMatrixOrthographicLH(view_height, view_height, near_z, far_z);
+}
+
+Mat4 Mat4::OrthographicLH(float view_left, float view_right, float view_bottom, float view_top, float near_z, float far_z)
+{
+    return XMMatrixOrthographicOffCenterLH(view_left, view_right, view_bottom, view_top, near_z, far_z);
 }
 
 const Mat4 Mat4::IDENTITY = { 1.0f, 0.0f, 0.0f, 0.0f,
@@ -348,5 +405,37 @@ Quat Quat::FromRotationMatrix(const Mat4& m)
 Quat Quat::Lerp(const Quat& a, const Quat& b, float t)
 {
     Quat out;
+    // TODO
+    CHECK(false);
     return out;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+Box::Box(float in_min_x, float in_max_x, float in_min_y, float in_max_y, float in_min_z, float in_max_z) :
+    min_x(in_min_x), max_x(in_min_x),
+    min_y(in_min_y), max_y(in_min_y),
+    min_z(in_min_z), max_z(in_min_z)
+{
+    center = CalculateCenter();
+}
+
+Box::Box(const std::vector<Vec3>& points)
+{
+    for (const Vec3& p : points)
+    {
+        min_x = std::min(p.x, min_x);
+        max_x = std::max(p.x, max_x);
+        min_y = std::min(p.y, min_y);
+        max_y = std::max(p.y, max_y);
+        min_z = std::min(p.z, min_z);
+        max_z = std::max(p.z, max_z);
+    }
+    center = CalculateCenter();
+}
+
+Vec3 Box::CalculateCenter()
+{
+    const Vec3 center = { (min_x + max_x) * 0.5f, (min_y + max_y) * 0.5f, (min_z + max_z) * 0.5f };
+    return center;
 }

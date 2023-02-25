@@ -105,6 +105,20 @@ Tl;dr: I know the code's dirty ;) Don't judge me.
 * Fixing tangents on models with mirrored UVs
 * Automatically generating mip maps during run-time
 
+### [08 - Shadow Mapping](08_ShadowMapping/Source/)
+
+<p align="left">
+<img src="doc/images/08_shadow_mapping.png?raw=true" alt="Image of Subproject: 08-ShadowMapping" height="320px">
+<img src="doc/images/08_csm_debug.png?raw=true" alt="Image of Subproject: 08-ShadowMapping, Debug Visualization of Cascades" height="320px">
+</p>
+
+**Explored topics:**
+* Basic shadow mapping for directional lights, spot lights and point lights
+* Fitting view frustums to scene
+* Percentage Closer Filtering (PCF)
+* Cascaded Shadow Maps (CSM)
+* Stabilized CSM with Texel Snapping
+
 ## Dependencies
 
 * [Assimp](www.assimp.org)
@@ -117,7 +131,8 @@ Tl;dr: I know the code's dirty ;) Don't judge me.
 
 * [Chunky Knight](https://skfb.ly/6CwEJ) mesh by thanhtp, licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 * [Sponza](https://www.cryengine.com/marketplace/product/crytek/sponza-sample-scene) model by Crytek, glTF taken from [KhronosGroup glTF sample models repository](https://github.com/KhronosGroup/glTF-Sample-Models).
-
+* [Stanford Dragon PBR](https://skfb.ly/otyzN) by hackmans is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+Original mesh by [Stanford University Computer Graphics Laboratory](http://graphics.stanford.edu/data/3Dscanrep/).
 ## Learning Resources
 
 * [Real-time Rendering 4th edition](https://www.realtimerendering.com/)
@@ -125,3 +140,5 @@ Tl;dr: I know the code's dirty ;) Don't judge me.
 * [YouTube: ChiliTomatoNoodle](https://www.youtube.com/channel/UCsyHonfwHi4fLb2lkq0DEAA)
 * [Rastertek](http://www.rastertek.com/tutdx11.html)
 * [3dgep](https://www.3dgep.com/introduction-to-directx-11/)
+* [Shadows Repo by TheRealMJP](https://github.com/TheRealMJP/Shadows/)
+* [Cascaded Shadow Maps with Soft Shadows by Alex Tardif](https://alextardif.com/shadowmapping.html)

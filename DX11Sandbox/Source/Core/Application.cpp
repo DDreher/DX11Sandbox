@@ -106,19 +106,27 @@ void BaseApplication::HandleSDLEvent(const SDL_Event& sdl_event)
     {
         window_->HandleSDLEvent(sdl_event);
     }
+
+    if(input::IsKeyReleased(SDL_KeyCode::SDLK_i))
+    {
+        render_debug_ui_ = !render_debug_ui_;
+    }
 }
 
 void BaseApplication::Render()
 {
     gfx::renderer->Render();
 
-    ImGui_ImplSDL2_NewFrame();
-    ImGui_ImplDX11_NewFrame();
-    ImGui::NewFrame();
-    gfx::renderer->RenderUI();
-    RenderUI();
-    ImGui::Render();
-    ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    if(render_debug_ui_)
+    {
+        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplDX11_NewFrame();
+        ImGui::NewFrame();
+        gfx::renderer->RenderUI();
+        RenderUI();
+        ImGui::Render();
+        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+    }
 
     gfx::renderer->Present();
 }

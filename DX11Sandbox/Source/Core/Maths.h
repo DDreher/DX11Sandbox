@@ -8,11 +8,19 @@ struct Vec4;
 struct Mat4;
 struct Quat;
 
+static inline constexpr float PI = 3.141592653589793238463f;
+static inline constexpr float PI_DIV2 = PI * 0.5f;
+
 struct MathUtils
 {
     static float DegToRad(float value)
     {
         return DirectX::XMConvertToRadians(value);
+    }
+
+    static float RadToDeg(float value)
+    {
+        return value * (180.0f / PI);
     }
 
     template <typename T>
@@ -200,9 +208,31 @@ struct Vec4 : public DirectX::XMFLOAT4
         return *this;
     }
 
+    inline Vec4& operator-=(const Vec4& v)
+    {
+        using namespace DirectX;
+        const XMVECTOR v1 = XMLoadFloat4(this);
+        const XMVECTOR v2 = XMLoadFloat4(&v);
+        const XMVECTOR result = XMVectorSubtract(v1, v2);
+        XMStoreFloat4(this, result);
+        return *this;
+    }
+
+    inline Vec4& operator/=(float f) noexcept
+    {
+        using namespace DirectX;
+        CHECK(f != 0.0f);
+        const XMVECTOR v1 = XMLoadFloat4(this);
+        const XMVECTOR result = XMVectorScale(v1, 1.0f / f);
+        XMStoreFloat4(this, result);
+        return *this;
+    }
+
     static Vec4 Transform(const Vec4& v, const Quat& q);
 
     Vec4 Normalize();
+    float Length() const;
+    float LengthSquared() const;
 
     Vec3 xyz()
     {
@@ -258,6 +288,8 @@ struct Mat4 : public DirectX::XMFLOAT4X4
 
     static Mat4 LookAt(const Vec3& origin, const Vec3& target, const Vec3& up);
     static Mat4 PerspectiveFovLH(float fov_y_rad, float aspect_ratio, float near_z, float far_z);
+    static Mat4 OrthographicLH(float view_width, float view_height, float near_z, float far_z);
+    static Mat4 OrthographicLH(float view_left, float view_right, float view_bottom, float view_top, float near_z, float far_z);
 
     static const Mat4 IDENTITY;
 };
@@ -269,7 +301,7 @@ struct Quat : public DirectX::XMFLOAT4
     Quat() : DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f) {}
     Quat(float x, float y, float z, float w) : DirectX::XMFLOAT4(x, y, z, w) {}
     Quat(const Vec4& v) : DirectX::XMFLOAT4(v.x, v.y, v.z, v.w) {}
-    Quat(DirectX::XMVECTOR v) { DirectX::XMStoreFloat4(this, v); }
+    explicit Quat(DirectX::XMVECTOR v) { DirectX::XMStoreFloat4(this, v); }
 
     inline bool operator==(const Quat& q) const
     {
@@ -278,8 +310,6 @@ struct Quat : public DirectX::XMFLOAT4
         const XMVECTOR v2 = XMLoadFloat4(&q);
         return XMVector4Equal(v1, v2);
     }
-
-    //inline Quat& operator= (const XMVECTORF32& F) noexcept { x = F.f[0]; y = F.f[1]; z = F.f[2]; w = F.f[3]; return *this; }
 
     inline bool operator!=(const Quat& v) const
     {
@@ -397,5 +427,44 @@ inline Quat operator/ (const Quat& a, const Quat& b)
     return out;
 }
 
-Vec3 operator*(const Vec3& v, const Mat4& m);
-Mat4 operator*(const Mat4& mat_a, const Mat4& mat_b);
+Vec3 operator* (const Vec3& v, const Mat4& m);
+Vec4 operator+ (const Vec4& v1, const Vec4& v2);
+Vec4 operator- (const Vec4& v1, const Vec4& v2);
+Vec4 operator* (const Vec4& v, const Mat4& m);
+Mat4 operator* (const Mat4& mat_a, const Mat4& mat_b);
+
+//////////////////////////////////////////////////////////////////////////
+
+struct Box
+{
+    Box();
+
+    Box(float in_min_x, float in_max_x,
+        float in_min_y, float in_max_y,
+        float in_min_z, float in_max_z);
+
+    Box(const std::vector<Vec3>& points);
+
+    float getWidth() { return std::abs(max_x - min_x); }
+    float getHeight() { return std::abs(max_y - min_y); }
+    float getDepth() { return std::abs(max_z - min_y); }
+
+    Vec3 center = Vec3::ZERO;
+    float min_x = std::numeric_limits<float>::max();
+    float max_x = std::numeric_limits<float>::lowest();
+    float min_y = std::numeric_limits<float>::max();
+    float max_y = std::numeric_limits<float>::lowest();
+    float min_z = std::numeric_limits<float>::max();
+    float max_z = std::numeric_limits<float>::lowest();
+
+private:
+    Vec3 CalculateCenter();
+};
+
+struct Sphere
+{
+    Sphere(const Vec3& in_center, float in_radius) : center(in_center), radius(in_radius) {}
+
+    Vec3 center = Vec3::ZERO;
+    float radius = 0.0f;
+};

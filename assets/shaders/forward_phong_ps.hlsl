@@ -1,9 +1,8 @@
 #include <common.hlsli>
-#include <lights.hlsli>
 
 #define MAX_DIRECTIONAL_LIGHTS 1
-#define MAX_POINT_LIGHTS 32
-#define MAX_SPOT_LIGHTS 32
+#define MAX_POINT_LIGHTS 4
+#define MAX_SPOT_LIGHTS 4
 #define MAX_SHININESS 128
 
 #define DIFFUSE_TEX_BIT 1
@@ -29,6 +28,40 @@ cbuffer PerViewData : register(b1)
 cbuffer PerObjectData : register(b2)
 {
     float4x4 mat_world;
+};
+
+struct DirectionalLight
+{
+    float3 direction_ws;
+    float ambient_intensity;
+    float3 color;
+    float brightness;
+};
+
+struct PointLight
+{
+    float3 pos_ws;
+    float ambient_intensity;
+    float3 color;
+    float attenuation;
+    float brightness;
+    float padding_0;
+    float padding_1;
+    float padding_2;
+};
+
+struct SpotLight
+{
+    float3 pos_ws;
+    float ambient_intensity;
+    float3 color;
+    float attenuation;
+    float3 direction_ws;
+    float cos_cone_cutoff;
+    float brightness;
+    float padding_0;
+    float padding_1;
+    float padding_2;
 };
 
 cbuffer LightingData : register(b3)
@@ -80,15 +113,6 @@ void Main(PSInput input, out float4 out_color : SV_Target0)
     
     float3 surface_normal_ws = normalize(input.normal_ws.xyz);      // <-- Data is interpolated between fragments -> We have to renormalize
     float3 surface_tangent_ws = normalize(input.tangent_ws.xyz);    // <-|
-
-    if (HasTex(bound_texture_bits, NORMAL_TEX_BIT))
-    {
-        float3 surface_normal_ts = (tex_normal.Sample(sampler_anisotropic_wrap, input.uv).xyz) * 2.0f - 1.0f;
-        float3 surface_bitangent_ws = cross(surface_tangent_ws, surface_normal_ws);
-        float3x3 mat_tbn = float3x3(surface_tangent_ws, surface_bitangent_ws, surface_normal_ws);
-        surface_normal_ws = mul(surface_normal_ts, mat_tbn);
-    }
-
     float3 surface_to_cam = normalize(pos_camera_ws.xyz - input.pos_ws.xyz);
     float3 material_specular_color = specular_color;
 

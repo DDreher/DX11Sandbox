@@ -17,7 +17,11 @@ void AppHelloTriangle::Cleanup()
 
 void AppHelloTriangle::Update()
 {
-    // No update required, it's just a static triangle :)
+    SDL_Event sdl_event;
+    while (SDL_PollEvent(&sdl_event))
+    {
+        HandleSDLEvent(sdl_event);
+    }
 }
 
 void AppHelloTriangle::Render()

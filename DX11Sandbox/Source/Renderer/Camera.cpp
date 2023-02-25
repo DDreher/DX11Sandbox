@@ -83,6 +83,16 @@ void Camera::SetViewProjection(const Mat4& vp)
     is_view_projection_dirty_ = false;
 }
 
+const Mat4& Camera::GetInvViewProjection()
+{
+    if (is_view_projection_dirty_)
+    {
+        RecalculateViewProjection();
+    }
+
+    return inv_view_projection_;
+}
+
 void Camera::UpdateMatrices()
 {
     if(is_view_dirty_)
@@ -188,5 +198,6 @@ void Camera::RecalculateView()
 void Camera::RecalculateViewProjection()
 {
     view_projection_ = view_ * projection_;
+    inv_view_projection_ = view_projection_.Invert();
     is_view_projection_dirty_ = false;
 }

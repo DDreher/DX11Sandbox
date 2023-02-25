@@ -32,14 +32,14 @@ Material::Material(const MaterialDesc& desc)
     }
 
     vs_ = gfx::resource_manager->vertex_shaders.GetHandle({
-        .path = desc.vs_path,
-        .defines = defines
+            .path = desc.vs_path,
+            .defines = defines
         });
     CHECK(vs_.IsValid());
 
     ps_ = gfx::resource_manager->pixel_shaders.GetHandle({
-        .path = desc.ps_path,
-        .defines = defines
+            .path = desc.ps_path,
+            .defines = defines
         });
     CHECK(ps_.IsValid());
 
@@ -102,10 +102,8 @@ void Material::Bind()
 
     for(const auto& [key, val] : texture_parameters_)
     {
-        //CHECK(val.tex.IsValid());
         Texture* tex = gfx::resource_manager->textures.Get(val.tex);
-        //CHECK(tex != nullptr);
-        if(tex) // TODO
+        if(tex != nullptr)
         {
             gfx::device_context->VSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());
             gfx::device_context->PSSetShaderResources(val.slot, 1 /*num views*/, tex->srv_.GetAddressOf());

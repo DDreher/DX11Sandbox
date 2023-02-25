@@ -33,7 +33,7 @@ SharedPtr<MeshData> MeshData::LoadFromFile(const std::string& asset_path)
 
     Assimp::Importer importer;
 
-    std::vector<char> bytes = FileIO::ReadFile(asset_path);
+    std::vector<uint8> bytes = FileIO::ReadFile(asset_path);
 
     uint32 importer_flags = aiProcess_ConvertToLeftHanded | aiProcessPreset_TargetRealtime_Fast;
     const aiScene* scene = importer.ReadFileFromMemory(bytes.data(), bytes.size(), importer_flags);

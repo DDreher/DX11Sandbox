@@ -8,15 +8,36 @@
 
 void StaticMesh::Bind() const
 {
-    index_buffer->Bind();
-    pos->Bind();
-    normals->Bind();
-    tangents->Bind();
-    uv->Bind();
+    if (index_buffer != nullptr)
+    {
+        index_buffer->Bind();
+    }
+
+    if (pos != nullptr)
+    {
+        pos->Bind();
+    }
+
+    if (normals)
+    {
+        normals->Bind();
+    }
+
+    if (tangents)
+    {
+        tangents->Bind();
+    }
+
+    if (uv)
+    {
+        uv->Bind();
+    }
 
     // TODO: ... Why do I store the materials in the model again?
-    Material* material = gfx::resource_manager->materials.Get(model->materials_[material_slot]);
-    material->Bind();
+    if(Material* material = gfx::resource_manager->materials.Get(model->materials_[material_slot]))
+    {
+        material->Bind();
+    }
 }
 
 void StaticMesh::Render() const

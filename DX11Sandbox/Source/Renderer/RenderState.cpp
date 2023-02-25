@@ -187,6 +187,26 @@ void RenderStateCache::InitCommonRasterizerStates()
         SetDebugName(rasterizer_state.Get(), "CULL_CCW");
         common_rasterizer_state_descriptors_[RasterizerState::CullCounterClockwise] = rasterizer_desc;
     }
+
+    // Pancaking
+    // => Disable depth clip so we don't cull objects in front of the near plane during shadow mapping
+    {
+        ComPtr<ID3D11RasterizerState> rasterizer_state;
+        D3D11_RASTERIZER_DESC rasterizer_desc = {};
+        rasterizer_desc.AntialiasedLineEnable = FALSE;
+        rasterizer_desc.DepthBias = 0;
+        rasterizer_desc.DepthBiasClamp = 0.0f;
+        rasterizer_desc.DepthClipEnable = FALSE;
+        rasterizer_desc.FillMode = D3D11_FILL_SOLID;
+        rasterizer_desc.FrontCounterClockwise = FALSE;
+        rasterizer_desc.MultisampleEnable = FALSE;
+        rasterizer_desc.ScissorEnable = FALSE;
+        rasterizer_desc.SlopeScaledDepthBias = 1.0f;
+        rasterizer_desc.CullMode = D3D11_CULL_BACK;
+        DX11_VERIFY(gfx::device->CreateRasterizerState(&rasterizer_desc, &rasterizer_state));
+        SetDebugName(rasterizer_state.Get(), "PANCAKING");
+        common_rasterizer_state_descriptors_[RasterizerState::Pancaking] = rasterizer_desc;
+    }
 }
 
 void RenderStateCache::InitCommonDepthStencilStates()
@@ -339,6 +359,29 @@ void RenderStateCache::InitCommonSamplerStates()
         common_sampler_state_descriptors_[SamplerState::AnisotropicWrap] = desc;
         DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
         SetDebugName(state.Get(), "ANISOTROPIC_WRAP");
+        sampler_state_cache_[desc] = state;
+    }
+
+    // SHADOW_PCF
+    {
+        ComPtr<ID3D11SamplerState> state;
+        D3D11_SAMPLER_DESC desc = {};
+        desc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
+        desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.MipLODBias = 0.0f;
+        desc.MaxAnisotropy = 1;
+        desc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
+        desc.BorderColor[0] = 0.0f;
+        desc.BorderColor[1] = 0.0f;
+        desc.BorderColor[2] = 0.0f;
+        desc.BorderColor[3] = 0.0f;
+        desc.MinLOD = -FLT_MAX;
+        desc.MaxLOD = FLT_MAX;
+        common_sampler_state_descriptors_[SamplerState::ShadowPCF] = desc;
+        DX11_VERIFY(gfx::device->CreateSamplerState(&desc, &state));
+        SetDebugName(state.Get(), "SHADOW_PCF");
         sampler_state_cache_[desc] = state;
     }
 }

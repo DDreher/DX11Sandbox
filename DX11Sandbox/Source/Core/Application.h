@@ -38,4 +38,6 @@ protected:
 
 private:
     static inline BaseApplication* instance_ = nullptr;
+
+    bool render_debug_ui_ = true;
 };

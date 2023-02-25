@@ -17,6 +17,7 @@ struct RenderWorkItem
     // http://realtimecollisiondetection.net/blog/?p=86
     float sort_key = 0.0f;
     StaticMesh* mesh = nullptr; // TODO: handle?
+    bool is_shadow_receiver = true;
 };
 
 class RenderQueue
@@ -26,9 +27,8 @@ public:
 
     void Add(const RenderWorkItem& item);
     void Sort();
-    void Submit();
+    void Clear();
 
-private:
     RenderQueueSortType sort_type_;
     std::vector<RenderWorkItem> items_;
     std::vector<size_t> item_indices_;

@@ -117,9 +117,30 @@ void Renderer::Render()
     static constexpr int CBUFFER_SLOT_PER_VIEW = 1;
     gfx::SetConstantBuffer(cbuffer_per_view_->buffer_.Get(), CBUFFER_SLOT_PER_VIEW);
 
-    // Render meshes
-    render_queue_opaque_.Submit();
-    render_queue_translucent_.Submit();
+    // Forward Pass - Opaque
+    {
+        for (size_t idx : render_queue_opaque_.item_indices_)
+        {
+            const RenderWorkItem& item = render_queue_opaque_.items_[idx];
+            item.mesh->model->Bind();
+            item.mesh->Bind();
+            item.mesh->Render();
+        }
+    }
+
+    // Forward Pass - Translucent
+    {
+        for (size_t idx : render_queue_translucent_.item_indices_)
+        {
+            const RenderWorkItem& item = render_queue_translucent_.items_[idx];
+            item.mesh->model->Bind();
+            item.mesh->Bind();
+            item.mesh->Render();
+        }
+    }
+
+    render_queue_opaque_.Clear();
+    render_queue_translucent_.Clear();
 }
 
 void Renderer::RenderUI()
