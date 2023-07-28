@@ -70,18 +70,18 @@ namespace
 
     void InitGlobalRenderStates()
     {
-        gfx::device_context->VSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
-        gfx::device_context->PSSetSamplers(0, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).GetAddressOf());
-        gfx::device_context->VSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
-        gfx::device_context->PSSetSamplers(1, 1, gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).GetAddressOf());
-        gfx::device_context->VSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).GetAddressOf());
-        gfx::device_context->PSSetSamplers(2, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).GetAddressOf());
-        gfx::device_context->VSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).GetAddressOf());
-        gfx::device_context->PSSetSamplers(3, 1, gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).GetAddressOf());
-        gfx::device_context->VSSetSamplers(4, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicClamp).GetAddressOf());
-        gfx::device_context->PSSetSamplers(4, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicClamp).GetAddressOf());
-        gfx::device_context->VSSetSamplers(5, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicWrap).GetAddressOf());
-        gfx::device_context->PSSetSamplers(5, 1, gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicWrap).GetAddressOf());
+        std::array<ID3D11SamplerState*, 7> samplers = {
+            gfx::render_state_cache->GetSamplerState(SamplerState::PointClamp).Get(),
+            gfx::render_state_cache->GetSamplerState(SamplerState::PointWrap).Get(),
+            gfx::render_state_cache->GetSamplerState(SamplerState::LinearClamp).Get(),
+            gfx::render_state_cache->GetSamplerState(SamplerState::LinearWrap).Get(),
+            gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicClamp).Get(),
+            gfx::render_state_cache->GetSamplerState(SamplerState::AnisotropicWrap).Get(),
+            gfx::render_state_cache->GetSamplerState(SamplerState::ShadowPCF).Get(),
+        };
+
+        gfx::device_context->VSSetSamplers(0, (UINT) samplers.size(), samplers.data());
+        gfx::device_context->PSSetSamplers(0, (UINT) samplers.size(), samplers.data());
     }
 }
 

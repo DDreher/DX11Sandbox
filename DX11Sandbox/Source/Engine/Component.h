@@ -49,6 +49,8 @@ public:
     }
 
     SharedPtr<Model> model_;
+    bool is_shadow_receiver_ = true;
+    bool is_visible_ = true;
 };
 
 class CameraComponent : public BaseComponent<ComponentType::Camera>

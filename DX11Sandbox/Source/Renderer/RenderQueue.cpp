@@ -32,20 +32,8 @@ void RenderQueue::Sort()
     }
 }
 
-void RenderQueue::Submit()
+void RenderQueue::Clear()
 {
-    Sort();
-
-    for(size_t idx : item_indices_)
-    {
-        const RenderWorkItem& item = items_[idx];
-
-        // TODO: How to handle per-object cbuffer binding? Currently it's in the model but this doesn't feel right...
-        item.mesh->model->Bind();
-        item.mesh->Bind();
-        item.mesh->Render();
-    }
-
     items_.clear();
     item_indices_.clear();
 }

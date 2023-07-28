@@ -131,13 +131,33 @@ void Renderer::Render()
     static constexpr int CBUFFER_SLOT_LIGHT_DATA = 3;
     gfx::SetConstantBuffer(cbuffer_light_->buffer_.Get(), CBUFFER_SLOT_LIGHT_DATA);
 
+    // Forward Pass - Opaque
+    {
+        for (size_t idx : render_queue_opaque_.item_indices_)
+        {
+            const RenderWorkItem& item = render_queue_opaque_.items_[idx];
+            item.mesh->model->Bind();
+            item.mesh->Bind();
+            item.mesh->Render();
+        }
+    }
+
+    // Forward Pass - Translucent
+    {
+        for (size_t idx : render_queue_translucent_.item_indices_)
+        {
+            const RenderWorkItem& item = render_queue_translucent_.items_[idx];
+            item.mesh->model->Bind();
+            item.mesh->Bind();
+            item.mesh->Render();
+        }
+    }
+
     directional_lights_.clear();
     point_lights_.clear();
     spot_lights_.clear();
-
-    // Mesh draw calls
-    render_queue_opaque_.Submit();
-    render_queue_translucent_.Submit();
+    render_queue_opaque_.Clear();
+    render_queue_translucent_.Clear();
 }
 
 void Renderer::Enqueue(const RenderWorkItem& item, BlendState blend_state)

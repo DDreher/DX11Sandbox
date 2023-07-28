@@ -38,10 +38,10 @@
 !*.usf
 !*.ush
 !*.hlsl
+!*.hlsli
 !*.glsl
 !*.spv
 !*.frag
-!*.
 
 # Texture files
 !*.png
@@ -52,6 +52,8 @@
 !*.mtl
 !*.fbx
 !*.glb
+!*.gltf
+!*.bin
 
 # Text files
 !*.txt

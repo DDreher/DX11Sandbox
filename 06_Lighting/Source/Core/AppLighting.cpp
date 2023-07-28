@@ -4,8 +4,8 @@
 #include "SDL_events.h"
 #include "spdlog/fmt/bundled/ostream.h"
 
+#include "Core/SceneImporter.h"
 #include "Engine/Entity.h"
-#include "Engine/SceneImporter.h"
 
 #include "Renderer/Renderer.h"
 

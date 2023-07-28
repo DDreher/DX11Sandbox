@@ -42,11 +42,7 @@ void Texture::Create(uint8* data)
         staging_desc.Format = texture_space_ == TextureSpace::SRGB ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
         staging_desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
         staging_desc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-        // Note: Not initial data! We have to copy the first mipmap level over ourselves
-
-        //D3D11_SUBRESOURCE_DATA staging_subresource_data = {};
-        //staging_subresource_data.pSysMem = (void*)data;
-        //staging_subresource_data.SysMemPitch = width_ * 4 * sizeof(uint8);
+        // Note: No initial data! We have to copy the first mipmap level over ourselves
 
         ComPtr<ID3D11Texture2D> staging_handle = nullptr;
         DX11_VERIFY(gfx::device->CreateTexture2D(&staging_desc, nullptr, &staging_handle));

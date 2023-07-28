@@ -47,7 +47,12 @@ public:
     Entity* GetChild(uint32 idx)
     {
         CHECK(idx < children_.size());
-        return children_[idx];
+        if(idx < children_.size())
+        {
+            return children_[idx];
+        }
+
+        return nullptr;
     }
 
     String name_;

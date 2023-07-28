@@ -48,6 +48,7 @@ enum class RasterizerState : uint8
     CullNone,
     CullClockwise,
     CullCounterClockwise,
+    Pancaking,
     Invalid
 };
 
@@ -75,7 +76,8 @@ enum class SamplerState : uint8
     LinearClamp,
     LinearWrap,
     AnisotropicClamp,
-    AnisotropicWrap
+    AnisotropicWrap,
+    ShadowPCF
 };
 MAKE_HASHABLE(D3D11_SAMPLER_DESC);
 

@@ -17,7 +17,7 @@ void SimpleVertexShader::LoadFromHlsl(ID3D11Device* const device, const std::str
     CHECK(input_layout == nullptr);
 
     // Load shader source
-    std::vector<char> src_data = FileIO::ReadFile(path);
+    std::vector<uint8> src_data = FileIO::ReadFile(path);
 
     uint32_t compile_flags = 0;
 
@@ -59,7 +59,7 @@ void SimplePixelShader::LoadFromHlsl(ID3D11Device* const device, const std::stri
     CHECK(ps == nullptr);
 
     // Load shader source
-    std::vector<char> src_data = FileIO::ReadFile(path);
+    std::vector<uint8> src_data = FileIO::ReadFile(path);
 
     uint32_t compile_flags = 0;
 

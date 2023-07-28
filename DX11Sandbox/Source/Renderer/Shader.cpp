@@ -83,6 +83,7 @@ HRESULT ShaderCompiler::Compile(const std::string& asset_path, const std::vector
     uint32_t compile_flags = D3DCOMPILE_ENABLE_STRICTNESS;
 #ifndef NDEBUG
     compile_flags |= D3DCOMPILE_DEBUG;
+    compile_flags |= D3DCOMPILE_SKIP_OPTIMIZATION;
 #endif
 
     std::vector<D3D_SHADER_MACRO> shader_macros;
